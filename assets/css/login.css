@@ -1,0 +1,62 @@
+@import url("auth-base.css");
+@import url("toast.css");
+
+/* Existing login-specific styles (unchanged except removal of duplicated toast CSS) */
+:root {
+    --login-accent: var(--auth-accent);
+    --login-accent-alt: var(--auth-accent-alt);
+}
+.auth-card.login:before {
+    background: linear-gradient(135deg, #303643, var(--login-accent));
+}
+.auth-card.login:after {
+    background: linear-gradient(135deg, var(--login-accent-alt), #303643);
+}
+.auth-header h1 span {
+    font-size: 0.62rem;
+    vertical-align: middle;
+    background: #1d2229;
+    color: var(--login-accent);
+    padding: var(--auth-spacing-xs) 0.55rem;
+    border-radius: 6px;
+    margin-left: 0.6rem;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    box-shadow: 0 0 0 1px #2b323b inset;
+}
+.actions-inline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.7rem;
+    margin-top: -0.4rem;
+    margin-bottom: 0.2rem;
+    color: var(--auth-text-muted);
+}
+.actions-inline a {
+    color: var(--login-accent);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color var(--auth-transition-fast), text-shadow 0.25s;
+}
+.actions-inline a:hover {
+    text-decoration: underline;
+    color: var(--auth-accent-hover);
+    text-shadow: 0 0 6px rgba(99, 102, 241, 0.5);
+}
+.remember-wrapper {
+    display: flex;
+    gap: var(--auth-spacing-sm);
+    align-items: center;
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--auth-text-muted);
+}
+.remember-wrapper input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--login-accent);
+    background: #1f242b;
+    border: 1px solid var(--auth-border);
+}

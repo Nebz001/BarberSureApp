@@ -1,0 +1,200 @@
+@import url("auth-base.css");
+@import url("toast.css");
+
+/* Register-specific dark tweaks */
+.auth-card.register:before {
+    background: linear-gradient(135deg, #303643, var(--auth-accent));
+}
+.auth-card.register:after {
+    background: linear-gradient(135deg, var(--auth-accent-alt), #303643);
+}
+.auth-header h1 span {
+    font-size: 0.6rem;
+    vertical-align: middle;
+    background: #1d2229;
+    color: var(--auth-accent);
+    padding: 0.38rem 0.6rem;
+    border-radius: 6px;
+    margin-left: 0.6rem;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    box-shadow: 0 0 0 1px #2b323b inset;
+}
+.password-hint {
+    font-size: 0.58rem;
+    color: #79818c;
+    margin-top: -0.4rem;
+    letter-spacing: 0.05em;
+}
+.role-switch-wrapper {
+    margin-top: 0.3rem;
+}
+.role-switch-heading {
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #7b8794;
+    margin: 0 0 0.45rem;
+    text-transform: uppercase;
+}
+.policy {
+    font-size: 0.6rem;
+    color: #79818c;
+    line-height: 1.25;
+    margin-top: -0.3rem;
+}
+.policy a {
+    color: var(--auth-accent-alt);
+    text-decoration: none;
+    font-weight: 600;
+}
+.policy a:hover {
+    text-decoration: underline;
+    color: var(--auth-accent-hover);
+}
+
+/* Owner business extra fieldset layout safety tweaks */
+.owner-extra {
+    position: relative;
+}
+.owner-extra .address-field,
+.owner-extra .services-field {
+    width: 100%;
+}
+.owner-extra .services-field textarea {
+    width: 100%;
+    max-width: 100%;
+    display: block;
+    box-sizing: border-box;
+}
+/* Add a little separation from previous hint */
+.owner-extra .services-field {
+    margin-top: 0.75rem !important;
+}
+
+/* Verification code field styling */
+.auth-form input[name="code"] {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-align: center;
+    background: #1d2229;
+    border: 2px solid #303643;
+    color: var(--auth-accent);
+    padding: 1rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.auth-form input[name="code"]:focus {
+    border-color: var(--auth-accent);
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.15), 0 4px 12px rgba(0, 0, 0, 0.4);
+    transform: translateY(-1px);
+}
+
+.auth-form input[name="code"]:valid {
+    border-color: var(--auth-accent-alt);
+    color: var(--auth-accent-alt);
+}
+
+/* Actions inline container */
+.actions-inline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+/* Enhanced resend button styling */
+.secondary-btn {
+    background: transparent;
+    color: var(--auth-accent-alt);
+    border: 2px solid #303643;
+    padding: 0.65rem 1.2rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.secondary-btn:hover {
+    background: #303643;
+    border-color: var(--auth-accent-alt);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.secondary-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Verify button enhanced styling */
+.actions-inline .primary-btn {
+    flex: 1;
+    background: linear-gradient(
+        135deg,
+        var(--auth-accent),
+        var(--auth-accent-alt)
+    );
+    border: none;
+    color: #1d2229;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.25s ease;
+}
+
+.actions-inline .primary-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 193, 7, 0.3);
+    filter: brightness(1.1);
+}
+
+/* Verification label styling */
+.verification-label {
+    position: relative;
+}
+
+.verification-label .field-hint {
+    display: block;
+    font-size: 0.75rem;
+    color: #79818c;
+    margin-top: 0.4rem;
+    font-style: italic;
+    text-align: center;
+    letter-spacing: 0.03em;
+}
+
+/* Button span styling for better text alignment */
+.primary-btn span,
+.secondary-btn span {
+    display: inline-block;
+    line-height: 1;
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 480px) {
+    .actions-inline {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .actions-inline .primary-btn,
+    .actions-inline .secondary-btn {
+        width: 100%;
+    }
+
+    .auth-form input[name="code"] {
+        font-size: 1.25rem;
+        padding: 0.85rem;
+    }
+}
