@@ -138,12 +138,19 @@ foreach ($shops as $s) {
         }
 
         @media (max-width: 860px) {
+
             .msg-list,
-            .chat-messages { height: 400px; }
+            .chat-messages {
+                height: 400px;
+            }
         }
+
         @media (max-width: 640px) {
+
             .msg-list,
-            .chat-messages { height: 340px; }
+            .chat-messages {
+                height: 340px;
+            }
         }
 
         .chat-hint {
