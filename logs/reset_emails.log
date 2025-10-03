@@ -1,0 +1,6 @@
+[2025-10-03T13:29:01+02:00] PASSWORD RESET: user=14 email=tanbenedict48@gmail.com link=http://localhost/barbersure-app/reset_password.php?token=bedbf8f11701cc5d%3A486aecf589f54d94d37f5e796ddc4e4a
+[2025-10-03T13:29:38+02:00] PASSWORD RESET: user=14 email=tanbenedict48@gmail.com link=http://localhost/barbersure-app/reset_password.php?token=3017f031aa808ff1%3Ae043ac767605947b0a2a3a42488ef7fb
+[2025-10-03T13:33:31+02:00] PASSWORD RESET: user=14 email=tanbenedict48@gmail.com link=http://localhost/barbersure-app/reset_password.php?token=d76bf5d074fd0b50%3A5dfc02646ff5addcde8a0e8b4bf310f8 driver=log sent=yes error=
+[2025-10-03T13:49:13+02:00] PASSWORD RESET: user=14 email=tanbenedict48@gmail.com link=http://localhost/barbersure-app/reset_password.php?token=d327fa9d163fca48%3Ae544ca8dcf409bd10f33a9c9eaf63422 final_driver=smtp sent=yes attempts=smtp:ok final_error=
+[2025-10-03T14:15:27+02:00] PASSWORD RESET: user=14 email=tanbenedict48@gmail.com link=http://localhost/barbersure-app/reset_password.php?token=6ba14c8e433c1354%3A4aacf5f5c974f4da6fae0ebeeba26262 final_driver=smtp sent=yes attempts=smtp:ok final_error=
+[2025-10-03T14:21:03+02:00] PASSWORD RESET: user=14 email=tanbenedict48@gmail.com link=http://localhost/barbersure-app/reset_password.php?token=eb84de51ab6e0f13%3A43895d7ed858d1c58176a1e2475e24ff final_driver=smtp sent=yes attempts=smtp:ok final_error=

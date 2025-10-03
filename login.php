@@ -187,7 +187,7 @@ if ($login_success && $user && !empty($user['full_name'])) {
                     <input type="checkbox" id="remember" disabled>
                     <label for="remember" style="margin:0; cursor:not-allowed; opacity:.55;">Remember Me (soon)</label>
                 </div>
-                <a href="#" onclick="alert('Feature coming soon'); return false;">Forgot Password?</a>
+                <a href="forgot_password.php">Forgot Password?</a>
             </div>
 
             <button type="submit" class="primary-btn" <?= $login_success ? 'disabled style="opacity:.6;cursor:not-allowed;"' : '' ?>>Login</button>

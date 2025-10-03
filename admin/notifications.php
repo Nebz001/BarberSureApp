@@ -5,43 +5,57 @@ require_once __DIR__ . '/../config/functions.php';
 require_login();
 if (!has_role('admin')) redirect('login.php');
 global $pdo;
-// Handle create broadcast
+// Flash message (PRG)
 $flash = null;
+if (isset($_SESSION['flash_notifications'])) {
+    $flash = $_SESSION['flash_notifications'];
+    unset($_SESSION['flash_notifications']);
+}
+// Handle create broadcast
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_broadcast'])) {
     if (!verify_csrf($_POST['csrf'] ?? '')) {
-        $flash = ['type' => 'danger', 'text' => 'Invalid CSRF token'];
+        $_SESSION['flash_notifications'] = ['type' => 'danger', 'text' => 'Invalid CSRF token'];
+        header('Location: notifications.php');
+        exit;
     } else {
         $titleB = trim($_POST['title'] ?? '');
         $message = trim($_POST['message'] ?? '');
         $audience = $_POST['audience'] ?? 'all';
-        $channels = $_POST['channels'] ?? [];
-        if (!is_array($channels)) $channels = [];
-        $channels = array_values(array_intersect($channels, ['email', 'sms', 'system']));
-        if (!$channels) $channels = ['system'];
+        // Force email-only notifications; ignore user-supplied channels
+        $channels = ['email'];
         $scheduleAt = trim($_POST['scheduled_at'] ?? '');
         $scheduleAt = $scheduleAt !== '' ? date('Y-m-d H:i:s', strtotime($scheduleAt)) : null;
-        $link1_label = trim($_POST['link1_label'] ?? '');
-        $link1_url = trim($_POST['link1_url'] ?? '');
-        $link2_label = trim($_POST['link2_label'] ?? '');
-        $link2_url = trim($_POST['link2_url'] ?? '');
-        $link3_label = trim($_POST['link3_label'] ?? '');
-        $link3_url = trim($_POST['link3_url'] ?? '');
         if ($titleB && $message) {
             try {
-                $stmt = $pdo->prepare("INSERT INTO Notification_Broadcasts (title,message,channels,audience,scheduled_at,created_by,link1_label,link1_url,link2_label,link2_url,link3_label,link3_url) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
-                $stmt->execute([$titleB, $message, implode(',', $channels), $audience, $scheduleAt, current_user()['user_id'], $link1_label ?: null, $link1_url ?: null, $link2_label ?: null, $link2_url ?: null, $link3_label ?: null, $link3_url ?: null]);
+                // Duplicate guard: ignore if same title+message created within last 60s
+                $chk = $pdo->prepare("SELECT broadcast_id FROM Notification_Broadcasts WHERE title=? AND message=? AND created_at >= (NOW() - INTERVAL 60 SECOND) ORDER BY broadcast_id DESC LIMIT 1");
+                $chk->execute([$titleB, $message]);
+                if ($dup = $chk->fetch(PDO::FETCH_ASSOC)) {
+                    $_SESSION['flash_notifications'] = ['type' => 'warning', 'text' => 'Duplicate ignored (broadcast #' . (int)$dup['broadcast_id'] . ' just created)'];
+                    header('Location: notifications.php?dup=1');
+                    exit;
+                }
+                // Optional links removed: simplified insert
+                $stmt = $pdo->prepare("INSERT INTO Notification_Broadcasts (title,message,channels,audience,scheduled_at,created_by) VALUES (?,?,?,?,?,?)");
+                $stmt->execute([$titleB, $message, implode(',', $channels), $audience, $scheduleAt, current_user()['user_id']]);
                 $bid = (int)$pdo->lastInsertId();
                 if (!$scheduleAt || strtotime($scheduleAt) <= time()) {
                     // queue immediately
                     $targets = build_broadcast_targets($audience);
                     queue_notification_broadcast($bid, $targets, $channels);
                 }
-                $flash = ['type' => 'success', 'text' => 'Broadcast created' . ($scheduleAt ? ' (scheduled)' : ' & queued')];
+                $_SESSION['flash_notifications'] = ['type' => 'success', 'text' => 'Broadcast created' . ($scheduleAt ? ' (scheduled)' : ' & queued')];
+                header('Location: notifications.php?created=1');
+                exit;
             } catch (Throwable $e) {
-                $flash = ['type' => 'danger', 'text' => 'Create failed'];
+                $_SESSION['flash_notifications'] = ['type' => 'danger', 'text' => 'Create failed'];
+                header('Location: notifications.php?error=1');
+                exit;
             }
         } else {
-            $flash = ['type' => 'warning', 'text' => 'Title and message required'];
+            $_SESSION['flash_notifications'] = ['type' => 'warning', 'text' => 'Title and message required'];
+            header('Location: notifications.php?missing=1');
+            exit;
         }
     }
 }
@@ -86,12 +100,9 @@ include __DIR__ . '/partials/layout_start.php';
                                 </select>
                             </div>
                             <div class="mb-2">
-                                <label class="form-label small text-muted mb-1">Channels</label>
-                                <div class="d-flex flex-wrap gap-2">
-                                    <?php foreach (['system' => 'System', 'email' => 'Email', 'sms' => 'SMS'] as $val => $lab): ?>
-                                        <label class="form-check small"><input class="form-check-input" type="checkbox" name="channels[]" value="<?= e($val) ?>" <?= $val === 'system' ? 'checked' : '' ?>> <?= e($lab) ?></label>
-                                    <?php endforeach; ?>
-                                </div>
+                                <label class="form-label small text-muted mb-1">Channel</label>
+                                <div class="form-text xsmall">All broadcasts are sent via Email.</div>
+                                <input type="hidden" name="channels[]" value="email">
                             </div>
                             <div class="mb-2">
                                 <label class="form-label small text-muted mb-1">Title</label>
@@ -106,15 +117,7 @@ include __DIR__ . '/partials/layout_start.php';
                                 <input type="datetime-local" name="scheduled_at" class="form-control form-control-sm">
                                 <div class="form-text xsmall">Leave blank to send immediately.</div>
                             </div>
-                            <div class="border rounded p-2 mb-3">
-                                <div class="text-muted xsmall mb-1">Optional Links (shown in body)</div>
-                                <?php for ($i = 1; $i <= 3; $i++): ?>
-                                    <div class="row g-2 align-items-center mb-1">
-                                        <div class="col-4"><input name="link<?= $i ?>_label" class="form-control form-control-sm" placeholder="Label"></div>
-                                        <div class="col-8"><input name="link<?= $i ?>_url" class="form-control form-control-sm" placeholder="https://..."></div>
-                                    </div>
-                                <?php endfor; ?>
-                            </div>
+                            <!-- Optional links removed -->
                             <button class="btn btn-sm btn-primary">Create Broadcast</button>
                         </form>
                     </div>

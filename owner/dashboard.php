@@ -118,10 +118,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             }
         };
 
-        // Single ID (front) – user requested one slot only
-        $storeFile('valid_id', 'personal_id_front');
+        // Government ID front & back (separate slots)
+        $storeFile('valid_id_front', 'personal_id_front');
+        $storeFile('valid_id_back', 'personal_id_back');
         // Business permit like doc
         $storeFile('business_permit', 'business_permit');
+        // Sanitation certificate
+        $storeFile('sanitation_certificate', 'sanitation_certificate');
+        // Tax certificate
+        $storeFile('tax_certificate', 'tax_certificate');
         // Multiple shop photos
         if (isset($_FILES['shop_photos']) && is_array($_FILES['shop_photos']['name'])) {
             $count = count($_FILES['shop_photos']['name']);
@@ -821,14 +826,29 @@ if (!$isVerified) {
                         <?php if (function_exists('csrf_token')): ?><input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>" /><?php endif; ?>
                         <div style="display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));">
                             <label style="display:flex;flex-direction:column;gap:.45rem;background:#241207;border:1px solid #593514;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;">
-                                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#f3d9b9;">Valid ID (Government-issued)</span>
-                                <input type="file" name="valid_id" accept="image/*" style="font-size:.6rem;color:#d8c2aa;" required />
+                                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#f3d9b9;">Government ID (Front)</span>
+                                <input type="file" name="valid_id_front" accept="image/*" style="font-size:.6rem;color:#d8c2aa;" required />
                                 <span style="font-size:.5rem;color:#b9956d;">PNG / JPG / WEBP</span>
+                            </label>
+                            <label style="display:flex;flex-direction:column;gap:.45rem;background:#241207;border:1px solid #593514;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;">
+                                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#f3d9b9;">Government ID (Back)</span>
+                                <input type="file" name="valid_id_back" accept="image/*" style="font-size:.6rem;color:#d8c2aa;" required />
+                                <span style="font-size:.5rem;color:#b9956d;">Same ID back side</span>
                             </label>
                             <label style="display:flex;flex-direction:column;gap:.45rem;background:#241207;border:1px solid #593514;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;">
                                 <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#f3d9b9;">Business Permit / DTI / Barangay Clearance</span>
                                 <input type="file" name="business_permit" accept="image/*" style="font-size:.6rem;color:#d8c2aa;" required />
                                 <span style="font-size:.5rem;color:#b9956d;">Upload one clear image</span>
+                            </label>
+                            <label style="display:flex;flex-direction:column;gap:.45rem;background:#241207;border:1px solid #593514;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;">
+                                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#f3d9b9;">Sanitation Certificate</span>
+                                <input type="file" name="sanitation_certificate" accept="image/*" style="font-size:.6rem;color:#d8c2aa;" required />
+                                <span style="font-size:.5rem;color:#b9956d;">Latest approved copy</span>
+                            </label>
+                            <label style="display:flex;flex-direction:column;gap:.45rem;background:#241207;border:1px solid #593514;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;">
+                                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#f3d9b9;">Tax Certificate</span>
+                                <input type="file" name="tax_certificate" accept="image/*" style="font-size:.6rem;color:#d8c2aa;" required />
+                                <span style="font-size:.5rem;color:#b9956d;">Proof of tax compliance</span>
                             </label>
                             <label style="display:flex;flex-direction:column;gap:.45rem;background:#241207;border:1px solid #593514;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;">
                                 <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#f3d9b9;">Shop Photo(s)</span>

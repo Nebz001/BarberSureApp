@@ -7,6 +7,8 @@ require_login();
 if (!has_role('owner')) redirect('../login.php');
 $user = current_user();
 $ownerId = (int)($user['user_id'] ?? 0);
+// Capture verification status early
+$ownerIsVerified = (int)($user['is_verified'] ?? 0);
 
 // Load shared domain functions (for activate_subscription, etc.)
 require_once __DIR__ . '/../config/functions.php';
@@ -28,6 +30,8 @@ if (isset($_GET['plan']) && in_array($_GET['plan'], ['monthly', 'yearly'], true)
     if (isset($_GET['confirm']) && $_GET['confirm'] == '1') {
         if (!$primaryShopId) {
             $subscriptionError = 'Register a shop before purchasing a subscription.';
+        } elseif (!$ownerIsVerified) {
+            $subscriptionError = 'Your account must be verified before you can activate a subscription. Complete all verification steps first.';
         } else {
             $act = activate_subscription($ownerId, $primaryShopId, $planSel, $baseAmount, $taxRate);
             if ($act['success']) {
@@ -508,7 +512,6 @@ function format_payment_time($datetime)
         </nav>
     </header>
     <main class="owner-main" style="padding-top:1.25rem;">
-        <h1 style="margin:0 0 1rem;font-size:1.3rem;">Payment Management</h1>
         <?php if ($subscriptionNotice || $subscriptionError): ?>
             <div class="toast-stack" style="margin-top:-.5rem;margin-bottom:1rem;">
                 <?php if ($subscriptionNotice): ?><div class="toast t-success">
@@ -525,18 +528,25 @@ function format_payment_time($datetime)
                 <h2 style="margin:0 0 .75rem;font-size:1rem;">Confirm <?= $planSel === 'monthly' ? 'Monthly' : 'Yearly' ?> Subscription</h2>
                 <?php
                 $amt = $baseAmount;
-                $taxAmt = round($amt * ($taxRate / 100), 2);
-                $totalAmt = $amt + $taxAmt;
+                // No tax applies to subscriptions (business rule); show straight amount
+                $taxAmt = 0.00;
+                $totalAmt = $amt;
                 ?>
                 <p style="font-size:.7rem;line-height:1.5;color:#6b8299;max-width:640px;">You're about to activate the <strong><?= $planSel === 'monthly' ? 'Monthly' : 'Yearly' ?></strong> plan for your primary shop. This is a simulated payment (no real gateway). The subscription becomes active immediately upon confirmation.</p>
                 <ul style="list-style:none;padding:0;margin:.6rem 0 1rem;font-size:.65rem;color:#93adc7;display:grid;gap:.4rem;max-width:420px;">
-                    <li>Base Amount: <strong style="color:#fcd34d;">₱<?= number_format($amt, 2) ?></strong></li>
-                    <li>Tax (<?= $taxRate ?>%): <strong style="color:#fcd34d;">₱<?= number_format($taxAmt, 2) ?></strong></li>
-                    <li>Total Charge: <strong style="color:#10b981;">₱<?= number_format($totalAmt, 2) ?></strong></li>
+                    <li>Subscription Price: <strong style="color:#fcd34d;">₱<?= number_format($amt, 2) ?></strong></li>
+                    <li>Total Charge (No Tax): <strong style="color:#10b981;">₱<?= number_format($totalAmt, 2) ?></strong></li>
                     <li>Validity: <?= $planSel === 'monthly' ? '30 days' : '365 days' ?> (starting today)</li>
+                    <?php if (!$ownerIsVerified): ?>
+                        <li style="color:#f87171;font-weight:600;">Account not verified – subscription activation is blocked.</li>
+                    <?php endif; ?>
                 </ul>
                 <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
-                    <a href="payments.php?plan=<?= e($planSel) ?>&confirm=1" class="btn btn-primary" style="background:#059669;border-color:#059669;">Confirm & Activate</a>
+                    <?php if ($ownerIsVerified): ?>
+                        <a href="payments.php?plan=<?= e($planSel) ?>&confirm=1" class="btn btn-primary" style="background:#059669;border-color:#059669;">Confirm & Activate</a>
+                    <?php else: ?>
+                        <button type="button" class="btn btn-primary" disabled style="background:#374151;border-color:#374151;opacity:.6;cursor:not-allowed;">Verify Account First</button>
+                    <?php endif; ?>
                     <a href="payments.php" class="btn">Cancel</a>
                 </div>
             </section>

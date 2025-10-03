@@ -36,4 +36,5 @@ if (session_status() === PHP_SESSION_ACTIVE) {
     }
     session_destroy();
 }
-redirect('login.php?logged_out=1');
+// Redirect to public landing page after logout
+redirect('index.php?logged_out=1');

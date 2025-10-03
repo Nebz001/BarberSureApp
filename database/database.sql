@@ -295,3 +295,19 @@ CREATE TABLE IF NOT EXISTS Service_Categories (
     INDEX(active)
 );
 
+-- Password reset tokens (single-use, time-limited)
+CREATE TABLE IF NOT EXISTS Password_Resets (
+    reset_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    selector CHAR(16) NOT NULL, -- public part (hex)
+    verifier_hash CHAR(64) NOT NULL, -- hash of secret verifier
+    requested_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL,
+    used_at DATETIME NULL,
+    request_ip VARCHAR(45) NULL,
+    INDEX(selector),
+    INDEX(expires_at),
+    INDEX(user_id),
+    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
+);
+

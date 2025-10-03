@@ -148,9 +148,30 @@ if ($totalPages < 1) $totalPages = 1;
             flex-direction: column;
         }
 
+        .card-shop {
+            background: linear-gradient(145deg, #121b24, #0e141a);
+            border: 1px solid #1e2a35;
+            border-radius: 20px;
+            transition: transform .4s, border-color .4s, box-shadow .4s, background .5s;
+            box-shadow: 0 4px 18px -6px #000;
+        }
+
         .card-shop:hover {
-            transform: translateY(-4px);
-            border-color: #2c4257;
+            transform: translateY(-6px);
+            border-color: #2d4255;
+            box-shadow: 0 12px 34px -12px rgba(0, 0, 0, .75), 0 0 0 1px #2d4255 inset;
+            background: linear-gradient(145deg, #16232e, #101920);
+        }
+
+        .badge-verified {
+            background: linear-gradient(90deg, #10b981, #059669);
+            border: 0;
+            font-weight: 600;
+            font-size: .55rem;
+            letter-spacing: .75px;
+            padding: .35rem .5rem;
+            border-radius: 999px;
+            box-shadow: 0 2px 6px -2px rgba(0, 0, 0, .6);
         }
 
         .small-text {
@@ -158,9 +179,11 @@ if ($totalPages < 1) $totalPages = 1;
         }
 
         .filter-box {
-            background: #141b22;
+            background: rgba(20, 27, 34, .85);
             border: 1px solid #1f2732;
-            border-radius: 18px;
+            border-radius: 22px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 6px 28px -10px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255, 255, 255, .04) inset;
         }
 
         .page-link {
@@ -190,10 +213,12 @@ if ($totalPages < 1) $totalPages = 1;
             background: linear-gradient(135deg, #f59e0b, #fbbf24);
             border: 0;
             font-weight: 600;
+            letter-spacing: .4px;
+            box-shadow: 0 6px 22px -8px rgba(0, 0, 0, .55);
         }
 
         .btn-gradient:hover {
-            filter: brightness(1.07);
+            filter: brightness(1.08);
         }
 
         .text-truncate-2 {
@@ -260,58 +285,96 @@ if ($totalPages < 1) $totalPages = 1;
                 transform: none;
             }
         }
+
+        .discover-top-band {
+            position: relative;
+            background: radial-gradient(circle at 15% 20%, rgba(99, 102, 241, .18), transparent 70%), radial-gradient(circle at 85% 25%, rgba(245, 158, 11, .18), transparent 70%), linear-gradient(180deg, #0d1319, #0b1015);
+        }
+
+        .discover-top-band:before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(99, 102, 241, .08), transparent, rgba(245, 158, 11, .08));
+            pointer-events: none;
+        }
+
+        .heading-wrap h1 {
+            font-weight: 750;
+            letter-spacing: .5px;
+        }
+
+        .heading-wrap .sub {
+            font-size: .85rem;
+            color: #a6b3c2;
+        }
+
+        .shop-stats-bar {
+            font-size: .65rem;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+            color: #8ba2b9;
+        }
     </style>
 </head>
 
 <body class="text-light pt-fixed-offset page-transition-init" style="--discover-extra-offset:0.75rem;">
     <div class="layout-wrapper">
         <?php include __DIR__ . '/partials/public_header.php'; ?>
-        <section class="container mb-5" style="padding-top:var(--discover-extra-offset);">
-            <div class="row g-4 align-items-end mt-4 mb-3 filter-box p-4">
-                <form class="row g-3" method="get" action="discover.php">
-                    <div class="col-md-4">
-                        <label class="form-label small mb-1">Keyword</label>
-                        <input type="text" name="q" value="<?= e($q) ?>" class="form-control" placeholder="Search name or city" />
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small mb-1">City</label>
-                        <select name="city" class="form-select">
-                            <option value="">All</option>
-                            <?php foreach ($cities as $c): ?>
-                                <option value="<?= e($c) ?>" <?= $c === $city ? 'selected' : '' ?>><?= e($c) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small mb-1">Service</label>
-                        <select name="service" class="form-select">
-                            <option value="">All</option>
-                            <?php foreach ($servicesDistinct as $svc): ?>
-                                <option value="<?= e($svc) ?>" <?= $svc === $service ? 'selected' : '' ?>><?= e($svc) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label small mb-1">&nbsp;</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="verified" value="1" id="verifiedChk" <?= $verified === '1' ? 'checked' : '' ?> />
-                            <label for="verifiedChk" class="form-check-label small">Verified only</label>
+        <section class="discover-top-band mb-5 pb-1">
+            <div class="container pt-4" style="padding-top:var(--discover-extra-offset);">
+                <div class="heading-wrap mb-4">
+                    <h1 class="h3 mb-2 gradient-text">Discover Barbershops</h1>
+                    <div class="sub">Browse approved Batangas shops, filter by city & services, and explore ratings.</div>
+                </div>
+                <div class="row g-4 align-items-end mb-4 filter-box p-4">
+                    <form class="row g-3" method="get" action="discover.php">
+                        <div class="col-md-4">
+                            <label class="form-label small mb-1">Keyword</label>
+                            <input type="text" name="q" value="<?= e($q) ?>" class="form-control" placeholder="Search name or city" />
                         </div>
-                    </div>
-                    <div class="col-12 d-flex gap-2 mt-2">
-                        <button class="btn btn-gradient px-4">Apply Filters</button>
-                        <a href="discover.php" class="btn btn-outline-light">Reset</a>
-                        <div class="ms-auto d-flex align-items-center gap-2">
-                            <label class="small text-muted mb-0">Per Page</label>
-                            <select name="per_page" class="form-select form-select-sm" style="width:auto;">
-                                <?php foreach ([6, 12, 24, 36] as $pp): ?>
-                                    <option value="<?= $pp ?>" <?= $pp === $perPage ? 'selected' : '' ?>><?= $pp ?></option>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">City</label>
+                            <select name="city" class="form-select">
+                                <option value="">All</option>
+                                <?php foreach ($cities as $c): ?>
+                                    <option value="<?= e($c) ?>" <?= $c === $city ? 'selected' : '' ?>><?= e($c) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                    </div>
-                </form>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">Service</label>
+                            <select name="service" class="form-select">
+                                <option value="">All</option>
+                                <?php foreach ($servicesDistinct as $svc): ?>
+                                    <option value="<?= e($svc) ?>" <?= $svc === $service ? 'selected' : '' ?>><?= e($svc) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small mb-1">&nbsp;</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="verified" value="1" id="verifiedChk" <?= $verified === '1' ? 'checked' : '' ?> />
+                                <label for="verifiedChk" class="form-check-label small">Verified only</label>
+                            </div>
+                        </div>
+                        <div class="col-12 d-flex gap-2 mt-2">
+                            <button class="btn btn-gradient px-4">Apply Filters</button>
+                            <a href="discover.php" class="btn btn-outline-light">Reset</a>
+                            <div class="ms-auto d-flex align-items-center gap-2">
+                                <label class="small text-muted mb-0">Per Page</label>
+                                <select name="per_page" class="form-select form-select-sm" style="width:auto;">
+                                    <?php foreach ([6, 12, 24, 36] as $pp): ?>
+                                        <option value="<?= $pp ?>" <?= $pp === $perPage ? 'selected' : '' ?>><?= $pp ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
+        </section>
+        <section class="container mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h1 class="h4 mb-0">Browse Barbershops</h1>
                 <div class="small text-muted">Showing <?= $total ? ($offset + 1) : 0 ?>–<?= min($offset + $perPage, $total) ?> of <?= $total ?> result(s)</div>
@@ -339,7 +402,11 @@ if ($totalPages < 1) $totalPages = 1;
                                     <?= star_rating_html((float)$shop['avg_rating'], (int)$shop['reviews_count']) ?>
                                 </div>
                                 <div class="mt-auto d-flex">
-                                    <a class="btn btn-sm btn-outline-light w-100" href="shop_details.php?id=<?= (int)$shop['shop_id'] ?>">View Details</a>
+                                    <?php if ($isLoggedIn): ?>
+                                        <a class="btn btn-sm btn-outline-light w-100" href="shop_details.php?id=<?= (int)$shop['shop_id'] ?>">View Details</a>
+                                    <?php else: ?>
+                                        <a class="btn btn-sm btn-outline-light w-100" href="login.php?next=<?= urlencode('shop_details.php?id=' . (int)$shop['shop_id']) ?>">View Details</a>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>

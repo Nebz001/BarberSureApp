@@ -230,7 +230,7 @@ if (!function_exists('log_admin_action')) {
  *  - Sanitation & tax certificate approved
  *  - Shop exists & at least 1 approved shop photo
  *  - At least 1 service listed for the shop
- *  - Active (paid) subscription for current date range (payment_status='paid')
+ *  - (Removed) Active subscription requirement: Verification no longer depends on subscription to avoid circular block.
  */
 function evaluate_owner_verification(int $ownerId): array
 {
@@ -279,10 +279,7 @@ function evaluate_owner_verification(int $ownerId): array
         $svc = $pdo->prepare("SELECT COUNT(*) FROM Services WHERE shop_id=?");
         $svc->execute([$shopId]);
         if ((int)$svc->fetchColumn() < 1) $result['missing'][] = 'services';
-        // Subscription
-        $sub = $pdo->prepare("SELECT COUNT(*) FROM Shop_Subscriptions WHERE shop_id=? AND payment_status='paid' AND CURDATE() BETWEEN valid_from AND valid_to");
-        $sub->execute([$shopId]);
-        if ((int)$sub->fetchColumn() < 1) $result['missing'][] = 'active_subscription';
+        // Subscription no longer required for verification; owners can subscribe only AFTER verification.
     }
     $result['ready'] = empty($result['missing']);
     $result['details'] = ['shop_id' => $shopId, 'docs_found' => array_keys($docs)];
@@ -311,12 +308,31 @@ function is_subscribed(int $shopId): bool
  *  - taxRate percent (e.g. 12 for 12%)
  * Returns array [success=>bool, message=>string]
  */
-function activate_subscription(int $ownerId, int $shopId, string $planType, float $baseAmount, float $taxRate = 12.0): array
+function activate_subscription(int $ownerId, int $shopId, string $planType, float $baseAmount, float $taxRate = 0.0): array
 {
     global $pdo;
     if (!$pdo) return ['success' => false, 'message' => 'DB unavailable'];
     $planType = $planType === 'monthly' ? 'monthly' : 'yearly';
     if ($ownerId <= 0 || $shopId <= 0) return ['success' => false, 'message' => 'Invalid owner or shop'];
+    // Enforce owner account verification prior to purchasing a subscription
+    try {
+        $vStmt = $pdo->prepare("SELECT is_verified FROM Users WHERE user_id=? LIMIT 1");
+        $vStmt->execute([$ownerId]);
+        $isVerified = (int)$vStmt->fetchColumn();
+        if ($isVerified !== 1) {
+            return ['success' => false, 'message' => 'Your owner account is not yet verified. Complete verification steps before subscribing.'];
+        }
+    } catch (Throwable $e) {
+        // If the field is missing treat as not verified for safety
+        return ['success' => false, 'message' => 'Verification status unavailable. Please contact support.'];
+    }
+    // Prevent duplicate overlapping subscriptions: check if there is a paid subscription that is still valid (valid_to >= today)
+    $dupStmt = $pdo->prepare("SELECT subscription_id, valid_to FROM Shop_Subscriptions WHERE shop_id=? AND payment_status='paid' AND valid_to >= CURDATE() ORDER BY valid_to DESC LIMIT 1");
+    $dupStmt->execute([$shopId]);
+    $existing = $dupStmt->fetch(PDO::FETCH_ASSOC);
+    if ($existing) {
+        return ['success' => false, 'message' => 'An active subscription already exists until ' . $existing['valid_to']];
+    }
     // derive validity dates
     $validFrom = date('Y-m-d');
     if ($planType === 'monthly') {
@@ -324,17 +340,19 @@ function activate_subscription(int $ownerId, int $shopId, string $planType, floa
     } else {
         $validTo = date('Y-m-d', strtotime('+1 year -1 day'));
     }
-    $taxAmount = round($baseAmount * ($taxRate / 100), 2);
-    $total = $baseAmount + $taxAmount; // total charged
+    // Business rule: No tax applied to owner subscription purchases (tax only on customer bookings)
+    $taxRate = 0.0;
+    $taxAmount = 0.00;
+    $total = $baseAmount; // total charged equals base amount
     try {
         $pdo->beginTransaction();
         // Insert subscription (pending first)
         $insSub = $pdo->prepare("INSERT INTO Shop_Subscriptions (shop_id, plan_type, annual_fee, tax_rate, payment_status, valid_from, valid_to) VALUES (?,?,?,?, 'pending', ?, ?)");
-        $insSub->execute([$shopId, $planType, $baseAmount, $taxRate, $validFrom, $validTo]);
+        $insSub->execute([$shopId, $planType, $baseAmount, 0.0, $validFrom, $validTo]);
         $subId = (int)$pdo->lastInsertId();
         // Insert payment record (completed - simulated gateway)
-        $insPay = $pdo->prepare("INSERT INTO Payments (user_id, shop_id, subscription_id, amount, tax_amount, transaction_type, payment_method, payment_status, paid_at) VALUES (?,?,?,?,?,'subscription','online','completed',NOW())");
-        $insPay->execute([$ownerId, $shopId, $subId, $baseAmount, $taxAmount]);
+        $insPay = $pdo->prepare("INSERT INTO Payments (user_id, shop_id, subscription_id, amount, tax_amount, transaction_type, payment_method, payment_status, paid_at) VALUES (?,?,?,?,0.00,'subscription','online','completed',NOW())");
+        $insPay->execute([$ownerId, $shopId, $subId, $baseAmount, 0.00]);
         $payId = (int)$pdo->lastInsertId();
         // Update subscription with payment_id and mark paid
         $upd = $pdo->prepare("UPDATE Shop_Subscriptions SET payment_status='paid', payment_id=? WHERE subscription_id=?");
@@ -961,6 +979,7 @@ if (!function_exists('process_due_notification_broadcasts')) {
         return $processed;
     }
 }
+// --- Admin Test SMS Helper (logs only, does not hit real provider) ---
 if (!function_exists('generate_report_csv_file')) {
     function generate_report_csv_file(string $reportKey, string $start, string $end, array $data): ?string
     {
