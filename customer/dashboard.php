@@ -129,7 +129,6 @@ function status_chip_class($st)
         <nav id="customerNav" class="nav-links">
             <a class="active" href="dashboard.php">Dashboard</a>
             <a href="search.php">Find Shops</a>
-            <a href="booking.php">Book</a>
             <a href="bookings_history.php">History</a>
             <a href="profile.php">Profile</a>
             <form action="../logout.php" method="post" onsubmit="return confirm('Log out now?');" style="margin:0;">

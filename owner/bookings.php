@@ -436,6 +436,7 @@ function format_appointment_time($datetime)
             <a href="dashboard.php">Dashboard</a>
             <a href="manage_shop.php">Manage Shop</a>
             <a class="active" href="bookings.php">Bookings</a>
+            <a href="messages.php">Messages</a>
             <a href="payments.php">Payments</a>
             <a href="profile.php">Profile</a>
             <form action="../logout.php" method="post" onsubmit="return confirm('Log out now?');" style="margin:0;">
@@ -525,7 +526,7 @@ function format_appointment_time($datetime)
                             <th>Shop</th>
                             <th>Date & Time</th>
                             <th>Status</th>
-                            <th style="width:150px;">Actions</th>
+                            <th style="width:170px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -590,6 +591,9 @@ function format_appointment_time($datetime)
                                                     <button type="submit" name="action" value="cancel" class="btn btn-cancel">Cancel</button>
                                                 </form>
                                             <?php endif; ?>
+                                            <a href="messages.php?shop=<?= (int)$shopFilter ?>&booking=<?= (int)$appt['appointment_id'] ?>" title="Open chat" class="btn" style="display:inline-flex;align-items:center;gap:.25rem;">
+                                                <span class="bi bi-chat-dots" style="font-size:.7rem;line-height:1;"></span><span style="font-size:.55rem;">Chat</span>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>

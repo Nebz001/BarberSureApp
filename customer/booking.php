@@ -43,6 +43,70 @@ if ($selectedShopId && !in_array($selectedShopId, array_column($shops, 'shop_id'
     $selectedShopId = 0; // invalid
 }
 
+// Build consistent pre-chat channel (same as shop details modal) for continuity before booking confirmation
+$sessionId = session_id();
+$preChannel = null;
+if ($selectedShopId) {
+    $preChannel = 'pre_' . (int)$selectedShopId . '_' . substr(hash('sha256', $sessionId . '|' . (int)$selectedShopId), 0, 20);
+}
+// Booking page will use the pre-channel directly (so user sees exact same messages) until an appointment is created.
+// Fallback to legacy bk_ channel only if no shop selected (generic state)
+$bkFallback = 'bk_' . substr(hash('sha256', $sessionId . '|s0'), 0, 24);
+$bookingPageChannel = $preChannel ?: $bkFallback;
+// Track chanShop only for merge key uniqueness (generic pre_all merge)
+$chanShop = $selectedShopId ? ('s' . (int)$selectedShopId) : 's0';
+
+// If user came from generic Find Shops pre-chat (pre_all_<hash>) merge those messages once into this active booking page channel
+try {
+    if (!isset($_SESSION['merged_pre_all'])) $_SESSION['merged_pre_all'] = [];
+    $mergeKey = $bookingPageChannel . '|' . $chanShop;
+    if (!in_array($mergeKey, $_SESSION['merged_pre_all'], true)) {
+        $didMerge = false; // track if any messages actually merged so we don't lock out future attempts prematurely
+        $chatDir = realpath(__DIR__ . '/../storage/chat');
+        if ($chatDir) {
+            // Generic channel generation mirrors earlier implementation: pre_all_<hash>
+            $genericChannel = 'pre_all_' . substr(hash('sha256', $sessionId . '|all-shops'), 0, 20);
+            $genericFile = $chatDir . DIRECTORY_SEPARATOR . $genericChannel . '.json';
+            if (is_file($genericFile)) {
+                $raw = @file_get_contents($genericFile);
+                $msgs = [];
+                if ($raw) {
+                    $dec = json_decode($raw, true);
+                    if (is_array($dec)) $msgs = $dec;
+                }
+                if ($msgs) {
+                    $bookingFile = $chatDir . DIRECTORY_SEPARATOR . $bookingPageChannel . '.json';
+                    $existing = [];
+                    if (is_file($bookingFile)) {
+                        $exRaw = @file_get_contents($bookingFile);
+                        $exDec = json_decode($exRaw, true);
+                        if (is_array($exDec)) $existing = $exDec;
+                    }
+                    $haveIds = array_column($existing, 'id');
+                    $changed = false;
+                    foreach ($msgs as $m) {
+                        if (!isset($m['id'])) continue;
+                        if (in_array($m['id'], $haveIds, true)) continue;
+                        $existing[] = $m;
+                        $changed = true;
+                    }
+                    if ($changed) {
+                        if (count($existing) > 60) $existing = array_slice($existing, -60);
+                        @file_put_contents($bookingFile, json_encode($existing));
+                        $didMerge = true;
+                    }
+                }
+            }
+        }
+        // Only record as merged if something was actually merged. This allows a retry if user opened booking page before starting pre-chat.
+        if ($didMerge) {
+            $_SESSION['merged_pre_all'][] = $mergeKey;
+        }
+    }
+} catch (Throwable $e) {
+    // Silent: merging is best-effort.
+}
+
 // Fetch services for selected shop
 $services = [];
 $shopHours = null; // will hold open_time/close_time for selected shop if available
@@ -181,6 +245,112 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ok = $ins->execute([$userId, $shopId, $serviceId, date('Y-m-d H:i:s', $dt), $payment, $notes ?: null]);
             if ($ok) {
                 $success = 'Appointment booked successfully!';
+                $appointmentId = (int)$pdo->lastInsertId();
+                // Attempt to migrate current conversation into:
+                // 1) A stable booking channel (legacy bk_<session+shop>) for continuity after we stop using pre_ on this page
+                // 2) The appointment-specific channel used in booking history (bk_<appointmentId>_<hash>)
+                try {
+                    $chatDir = realpath(__DIR__ . '/../storage/chat');
+                    if ($chatDir) {
+                        $sessionId = session_id();
+                        // We already used $preChannel (if shop selected) as the on-page channel; derive legacy bk channel to persist post-booking
+                        $legacyBkChannel = 'bk_' . substr(hash('sha256', $sessionId . '|s' . (int)$shopId), 0, 24);
+                        $preFile = $preChannel ? $chatDir . DIRECTORY_SEPARATOR . $preChannel . '.json' : null;
+                        $bookingFile = $chatDir . DIRECTORY_SEPARATOR . $legacyBkChannel . '.json';
+                        // Appointment-specific channel
+                        $apptChannel = 'bk_' . $appointmentId . '_' . substr(hash('sha256', $sessionId . '|appt|' . $appointmentId), 0, 16);
+                        $apptFile = $chatDir . DIRECTORY_SEPARATOR . $apptChannel . '.json';
+
+                        // Helper to safely decode a chat file
+                        $readChat = function ($file) {
+                            if (!is_file($file)) return [];
+                            $raw = @file_get_contents($file);
+                            if (!$raw) return [];
+                            $d = json_decode($raw, true);
+                            return is_array($d) ? $d : [];
+                        };
+                        // Collect sources: any pre messages + any existing legacy booking channel
+                        $preMsgs = $preFile ? $readChat($preFile) : [];
+                        $bookMsgs = $readChat($bookingFile);
+                        $allSource = [];
+                        foreach ([$preMsgs, $bookMsgs] as $arr) {
+                            if ($arr) $allSource = array_merge($allSource, $arr);
+                        }
+                        if ($allSource) {
+                            // Deduplicate by id preserving order (older first)
+                            $dedup = [];
+                            $seen = [];
+                            foreach ($allSource as $m) {
+                                if (!is_array($m) || !isset($m['id'])) continue;
+                                if (isset($seen[$m['id']])) continue;
+                                $seen[$m['id']] = true;
+                                $dedup[] = $m;
+                            }
+                            if (count($dedup) > 60) $dedup = array_slice($dedup, -60);
+                            // If appointment file exists, merge (avoid duplicates)
+                            $existingAppt = $readChat($apptFile);
+                            if ($existingAppt) {
+                                $have = array_column($existingAppt, 'id');
+                                foreach ($dedup as $m) {
+                                    if (!in_array($m['id'], $have, true)) $existingAppt[] = $m;
+                                }
+                                if (count($existingAppt) > 80) $existingAppt = array_slice($existingAppt, -80);
+                                @file_put_contents($apptFile, json_encode($existingAppt));
+                            } else {
+                                @file_put_contents($apptFile, json_encode($dedup));
+                            }
+                        }
+
+                        if ($preFile && is_file($preFile)) {
+                            $raw = @file_get_contents($preFile);
+                            $preMsgs = [];
+                            if ($raw) {
+                                $dec = json_decode($raw, true);
+                                if (is_array($dec)) $preMsgs = $dec;
+                            }
+                            if ($preMsgs) {
+                                $merged = [];
+                                if (is_file($bookingFile)) {
+                                    $exist = json_decode(@file_get_contents($bookingFile), true);
+                                    if (is_array($exist)) $merged = $exist;
+                                }
+                                // Avoid duplicating by message id
+                                $haveIds = array_column($merged, 'id');
+                                foreach ($preMsgs as $m) {
+                                    if (!isset($m['id'])) continue;
+                                    if (in_array($m['id'], $haveIds, true)) continue;
+                                    $merged[] = $m;
+                                }
+                                // Trim to last 60 to stay small
+                                if (count($merged) > 60) $merged = array_slice($merged, -60);
+                                @file_put_contents($bookingFile, json_encode($merged));
+                                // Add synthetic system message marking booking creation in both booking + appt channels
+                                $systemMsg = [
+                                    'id' => bin2hex(random_bytes(5)),
+                                    'ts' => time(),
+                                    'role' => 'customer', // keep rendering minimal; could also introduce 'system'
+                                    'name' => 'System',
+                                    'msg' => 'Booking confirmed — conversation linked to appointment #' . $appointmentId
+                                ];
+                                // Append system note to booking channel
+                                $merged[] = $systemMsg;
+                                @file_put_contents($bookingFile, json_encode(count($merged) > 60 ? array_slice($merged, -60) : $merged));
+                                // Append system note to appt channel too
+                                $apptExisting = [];
+                                if (is_file($apptFile)) {
+                                    $apptExisting = json_decode(@file_get_contents($apptFile), true);
+                                    if (!is_array($apptExisting)) $apptExisting = [];
+                                }
+                                $apptExisting[] = $systemMsg;
+                                if (count($apptExisting) > 80) $apptExisting = array_slice($apptExisting, -80);
+                                @file_put_contents($apptFile, json_encode($apptExisting));
+                            }
+                        }
+                    }
+                } catch (Throwable $e) {
+                    // Silently ignore migration failures (ephemeral feature shouldn't block booking)
+                }
+
                 // Refresh services for selected
                 $selectedShopId = $shopId;
                 $svcStmt = $pdo->prepare("SELECT service_id, service_name, duration_minutes, price FROM Services WHERE shop_id=? ORDER BY service_name ASC");
@@ -575,6 +745,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             opacity: .6;
             cursor: not-allowed;
         }
+
+        /* Messenger-style chat tweaks (size unchanged) */
+        #bookingChat .chat-messages {
+            position: relative;
+            font-family: inherit;
+        }
+
+        #bookingChat .chat-line {
+            display: flex;
+            flex-direction: column;
+            max-width: 78%;
+        }
+
+        #bookingChat .chat-line.chat-customer {
+            /* current user */
+            align-self: flex-end;
+            text-align: right;
+        }
+
+        #bookingChat .chat-line.chat-owner {
+            /* shop owner */
+            align-self: flex-start;
+            text-align: left;
+        }
+
+        #bookingChat .chat-line .chat-meta {
+            font-size: .48rem;
+            letter-spacing: .5px;
+            opacity: .65;
+            margin: 0 4px 3px;
+            font-weight: 500;
+            line-height: 1.1;
+        }
+
+        #bookingChat .chat-line .chat-text {
+            background: #1e2732;
+            border: 1px solid #283543;
+            padding: .45rem .6rem .5rem;
+            border-radius: 14px;
+            font-size: .63rem;
+            line-height: 1.35;
+            color: #e2e8f0;
+            box-shadow: 0 2px 4px -2px rgba(0, 0, 0, .45), 0 4px 12px -4px rgba(0, 0, 0, .35);
+            word-break: break-word;
+        }
+
+        #bookingChat .chat-line.chat-customer .chat-text {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            border: 1px solid #d97706;
+            /* darker edge for contrast */
+            color: #1b1f24;
+            /* dark text for readability on bright gradient */
+        }
+
+        #bookingChat .chat-line.chat-owner .chat-text {
+            background: #1b2530;
+            border: 1px solid #2a3a43;
+            color: #f1f5f9;
+        }
+
+        /* Subtle hover (optional) */
+        #bookingChat .chat-line .chat-text:hover {
+            filter: brightness(1.05);
+        }
     </style>
 </head>
 
@@ -588,7 +822,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <nav id="customerNav" class="nav-links">
             <a href="dashboard.php">Dashboard</a>
             <a href="search.php">Find Shops</a>
-            <a class="active" href="booking.php">Book</a>
             <a href="bookings_history.php">History</a>
             <a href="profile.php">Profile</a>
             <form action="../logout.php" method="post" onsubmit="return confirm('Log out now?');" style="margin:0;">
@@ -734,6 +967,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div id="ls-notes">—</div>
                     </div>
                     <p class="summary-hint">This summary updates automatically as you fill out the form. You can still review everything in the confirmation step before submitting.</p>
+                    <?php
+                    // Use pre-derived booking page channel (session + selected shop)
+                    $channel = $bookingPageChannel;
+                    ?>
+                    <div id="bookingChat" class="card" data-channel="<?= e($channel) ?>" style="margin-top:1.2rem;padding:0.9rem 0.95rem 1rem;">
+                        <h3 style="margin:0 0 .6rem;font-size:.95rem;font-weight:600;display:flex;align-items:center;gap:.5rem;">Chat with Owner <span style="font-size:.55rem;letter-spacing:.5px;font-weight:600;background:#1f2a36;padding:.25rem .5rem;border-radius:40px;">Ephemeral</span></h3>
+                        <div class="chat-messages" style="background:var(--c-surface);border:1px solid var(--c-border-soft);border-radius:var(--radius-sm);padding:.6rem .65rem;display:flex;flex-direction:column;gap:.55rem;height:220px;overflow-y:auto;font-size:.65rem;line-height:1.35;">
+                            <div style="text-align:center;font-size:.6rem;color:var(--c-text-soft);">Messages are temporary and not stored permanently.</div>
+                        </div>
+                        <form style="margin-top:.65rem;display:flex;flex-direction:column;gap:.5rem;">
+                            <textarea rows="2" placeholder="Type a message to the shop owner…" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);border-radius:var(--radius-sm);padding:.55rem .6rem;font-size:.65rem;resize:vertical;min-height:54px;max-height:140px;"></textarea>
+                            <div style="display:flex;gap:.5rem;align-items:center;">
+                                <button type="submit" class="btn btn-primary" style="font-size:.65rem;padding:.55rem 1rem;">Send</button>
+                                <span style="font-size:.55rem;color:var(--c-text-soft);">Not saved • Auto-clears after inactivity</span>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div> <!-- /.page-container -->
@@ -994,6 +1244,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </script>
     <?php endif; ?>
     <script src="../assets/js/menu-toggle.js"></script>
+    <script src="../assets/js/booking_chat.js"></script>
 </body>
 
 </html>

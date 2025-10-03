@@ -71,6 +71,16 @@ $shops = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
 $cityRows = $pdo->query("SELECT DISTINCT city FROM Barbershops WHERE city IS NOT NULL AND city<>'' ORDER BY city ASC LIMIT 80")->fetchAll(PDO::FETCH_COLUMN) ?: [];
 $user = current_user();
+
+// Pagination link helper must be defined before first usage to avoid runtime undefined function errors
+if (!function_exists('page_link')) {
+    function page_link(int $p): string
+    {
+        $qs = $_GET;
+        $qs['page'] = $p;
+        return 'search.php?' . http_build_query($qs);
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -293,7 +303,6 @@ $user = current_user();
         <nav id="customerNav" class="nav-links">
             <a href="dashboard.php">Dashboard</a>
             <a class="active" href="search.php">Find Shops</a>
-            <a href="booking.php">Book</a>
             <a href="bookings_history.php">History</a>
             <a href="profile.php">Profile</a>
             <?php if (is_logged_in()): ?>
@@ -368,12 +377,7 @@ $user = current_user();
                     if ($end < $maxPage - 1) echo '<span>…</span>';
                     echo '<a href="' . e(page_link($maxPage)) . '">' . $maxPage . '</a>';
                 }
-                function page_link($p)
-                {
-                    $qs = $_GET;
-                    $qs['page'] = $p;
-                    return 'search.php?' . http_build_query($qs);
-                }
+                // page_link() defined earlier
                 ?>
             </div>
         <?php endif; ?>

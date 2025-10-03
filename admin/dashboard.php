@@ -26,7 +26,12 @@ try {
 // Monthly revenue trend (subscriptions + appointment payments) last 12 months
 $revTrend = [];
 try {
-    $sql = "SELECT DATE_FORMAT(created_at,'%Y-%m') ym, SUM(amount) total FROM Payments WHERE payment_status='completed' AND created_at >= DATE_SUB(CURDATE(), INTERVAL 11 MONTH) GROUP BY ym ORDER BY ym";
+    // Use paid_at when available for more accurate monthly revenue allocation; fallback to created_at
+    $sql = "SELECT DATE_FORMAT(COALESCE(paid_at, created_at),'%Y-%m') ym, SUM(amount) total
+                        FROM Payments
+                        WHERE payment_status='completed'
+                            AND COALESCE(paid_at, created_at) >= DATE_SUB(CURDATE(), INTERVAL 11 MONTH)
+                        GROUP BY ym ORDER BY ym";
     $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
     $revMap = [];
     foreach ($rows as $r) {

@@ -70,3 +70,46 @@ This document summarizes the newly added public discovery and SEO-oriented featu
 ---
 
 Authored automatically via enhancement workflow. Update this file as discovery evolves.
+
+---
+
+## Ephemeral Booking Chat (Customer ↔ Owner)
+
+Added a lightweight, privacy-focused chat panel on the customer booking page allowing real-time messaging with the shop owner without storing messages in the database.
+
+Key Properties:
+
+-   No database persistence: messages are written only to temporary JSON files under `storage/chat/` and trimmed to the last ~50.
+-   Automatic expiry: standalone cleanup script `scripts/cleanup_chat.php` removes chat files older than 2 hours.
+-   Ephemeral channel: derived from the user's session id + selected shop id hashed (opaque, not guessable easily).
+-   Rate limiting: simple session-based throttle (max 5 messages / 10s per user) to reduce spam.
+-   Privacy: messages never leave the ephemeral storage layer; not replicated into analytics or logs.
+
+Endpoints:
+
+-   `api/chat_send.php` (POST JSON: `{channel, msg}`) → appends a message.
+-   `api/chat_fetch.php` (GET with `channel` & optional `since` timestamp) → returns new messages.
+
+Client Assets:
+
+-   `assets/js/booking_chat.js` handles polling (2.5s interval), sending, and rendering.
+
+UI Integration:
+
+-   Embedded inside `customer/booking.php` summary column (`#bookingChat`).
+-   Minimal owner responder page at `owner/chat.php` (enter channel manually for now).
+
+Security / Abuse Considerations:
+
+-   Channel id regex constrained; file locking used for atomic writes.
+-   Messages truncated to 800 characters; only last 50 kept (older trimmed).
+-   Output sanitized client-side and should be escaped if re-rendered server-side.
+
+Future Enhancements (Optional):
+
+-   WebSocket upgrade for lower latency.
+-   Auto-provision owner chat link from booking context (share channel automatically after booking submission).
+-   Per-message encryption layer with shared secret per session.
+-   UI indicator when other party is typing.
+
+---

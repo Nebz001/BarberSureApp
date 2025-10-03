@@ -16,10 +16,28 @@ function ensure_csrf()
 $errors = [];
 $notices = [];
 
-// Fetch (first) shop for this owner (MVP single shop management)
-$stmt = $pdo->prepare("SELECT * FROM Barbershops WHERE owner_id=? ORDER BY shop_id ASC LIMIT 1");
-$stmt->execute([$ownerId]);
-$shop = $stmt->fetch(PDO::FETCH_ASSOC);
+// Fetch all shops for this owner (multi-shop management)
+$stmtAll = $pdo->prepare("SELECT * FROM Barbershops WHERE owner_id=? ORDER BY shop_id ASC");
+$stmtAll->execute([$ownerId]);
+$shops = $stmtAll->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+// Determine selected shop via ?shop=ID (fallback to first if invalid)
+$selectedShopId = isset($_GET['shop']) ? (int)$_GET['shop'] : 0;
+$shop = null;
+if ($shops) {
+    if ($selectedShopId) {
+        foreach ($shops as $s) {
+            if ((int)$s['shop_id'] === $selectedShopId) {
+                $shop = $s;
+                break;
+            }
+        }
+    }
+    if (!$shop) { // fallback
+        $shop = $shops[0];
+        $selectedShopId = (int)$shop['shop_id'];
+    }
+}
 
 // Handle create shop if none exists yet
 if (!$shop && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create_shop') {
@@ -32,8 +50,13 @@ if (!$shop && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') 
         $ins = $pdo->prepare("INSERT INTO Barbershops (owner_id, shop_name, address, city, status, registered_at) VALUES (?,?,?,?, 'pending', NOW())");
         $ins->execute([$ownerId, $shop_name, $address, $city]);
         $notices[] = 'Shop created successfully (pending approval).';
-        $stmt->execute([$ownerId]);
-        $shop = $stmt->fetch(PDO::FETCH_ASSOC);
+        // Refresh shop lists after creation
+        $stmtAll->execute([$ownerId]);
+        $shops = $stmtAll->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        if ($shops) {
+            $shop = $shops[0];
+            $selectedShopId = (int)$shop['shop_id'];
+        }
     } catch (Throwable $e) {
         $errors[] = $e->getMessage();
     }
@@ -70,8 +93,21 @@ if ($shop && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') =
         $upd = $pdo->prepare("UPDATE Barbershops SET shop_name=?, address=?, city=?, description=?, shop_phone=?, open_time=?, close_time=? WHERE shop_id=? AND owner_id=?");
         $upd->execute([$shop_name, $address, $city, $description ?: null, $shop_phone ?: null, $open_time ?: null, $close_time ?: null, $shop['shop_id'], $ownerId]);
         $notices[] = 'Shop details updated.';
-        $stmt->execute([$ownerId]);
-        $shop = $stmt->fetch(PDO::FETCH_ASSOC);
+        // Reload selected shop to reflect changes
+        $stmtAll->execute([$ownerId]);
+        $shops = $stmtAll->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        if ($shops) {
+            foreach ($shops as $s) {
+                if ((int)$s['shop_id'] === $selectedShopId) {
+                    $shop = $s;
+                    break;
+                }
+            }
+            if (!$shop) {
+                $shop = $shops[0];
+                $selectedShopId = (int)$shop['shop_id'];
+            }
+        }
     } catch (Throwable $e) {
         $errors[] = $e->getMessage();
     }
@@ -149,7 +185,7 @@ if ($shop) {
 
 <head>
     <meta charset="UTF-8" />
-    <title>Manage Shop • Owner • BarberSure</title>
+    <title>Manage Shops • Owner • BarberSure</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
@@ -162,6 +198,30 @@ if ($shop) {
             grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
             gap: 1rem;
             margin: .5rem 0 1.2rem;
+        }
+
+        /* Multi-shop selector pills (kept consistent with Messages page) */
+        .shop-switch .shop-tab {
+            background: #132230;
+            border: 1px solid #1f2f3a;
+            padding: .38rem .7rem;
+            border-radius: 20px;
+            font-size: .6rem;
+            color: #b7c6d3;
+            font-weight: 600;
+            letter-spacing: .4px;
+            transition: background .25s, border-color .25s, color .25s;
+        }
+
+        .shop-switch .shop-tab:hover {
+            border-color: #0ea5e9;
+            color: #fff;
+        }
+
+        .shop-switch .shop-tab.active {
+            background: #0f2733;
+            border-color: #0ea5e9;
+            color: #fff;
         }
 
         form label {
@@ -189,6 +249,10 @@ if ($shop) {
         form textarea {
             resize: vertical;
             min-height: 70px;
+        }
+
+        td {
+            color: #ffffff;
         }
 
         .toast-stack {
@@ -327,6 +391,7 @@ if ($shop) {
             <a href="dashboard.php">Dashboard</a>
             <a class="active" href="manage_shop.php">Manage Shop</a>
             <a href="bookings.php">Bookings</a>
+            <a href="messages.php">Messages</a>
             <a href="payments.php">Payments</a>
             <a href="profile.php">Profile</a>
             <form action="../logout.php" method="post" onsubmit="return confirm('Log out now?');" style="margin:0;">
@@ -336,7 +401,17 @@ if ($shop) {
         </nav>
     </header>
     <main class="owner-main" style="padding-top:1.25rem;">
-        <h1 style="margin:0 0 1rem;font-size:1.3rem;">Manage Your Shop</h1>
+        <h1 style="margin:0 0 .9rem;font-size:1.3rem;">Manage Your Shops<?= $shop ? ' • ' . e($shop['shop_name']) : '' ?></h1>
+        <?php if (!empty($shops) && count($shops) > 1): ?>
+            <div class="shop-switch" style="display:flex;flex-wrap:wrap;gap:.5rem;margin:0 0 1rem;align-items:center;">
+                <span style="font-size:.55rem;letter-spacing:.5px;font-weight:600;color:#7e95aa;">SELECT SHOP:</span>
+                <?php foreach ($shops as $s): $active = ((int)$s['shop_id'] === (int)$selectedShopId); ?>
+                    <a href="?shop=<?= (int)$s['shop_id'] ?>" class="shop-tab<?= $active ? ' active' : '' ?>" style="text-decoration:none;<?= $active ? 'background:#1d3142;border-color:#0ea5e9;color:#fff;' : '' ?>">
+                        <?= e($s['shop_name']) ?>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
         <?php if ($shop && $shop['status'] === 'pending'): ?>
             <div style="background:#3b2f14;border:1px solid #94620d;color:#fcd34d;padding:.65rem .8rem;border-radius:10px;font-size:.63rem;margin:0 0 1rem;display:flex;gap:.6rem;align-items:flex-start;">
                 <strong style="font-weight:600;letter-spacing:.5px;font-size:.6rem;">PENDING REVIEW</strong>
@@ -373,7 +448,7 @@ if ($shop) {
                 </form>
             </section>
         <?php else: ?>
-            <section class="card" style="margin-bottom:1.5rem;display:flex;flex-direction:column;gap:.8rem;">
+            <section class="card" style="margin-bottom:1.4rem;display:flex;flex-direction:column;gap:.85rem;">
                 <div style="display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;justify-content:space-between;">
                     <h2 style="margin:0;font-size:1rem;">Shop Details <span class="badge badge-status-<?= e($shop['status']) ?>" style="vertical-align:middle;"><?= strtoupper(e($shop['status'])) ?></span></h2>
                 </div>
@@ -411,7 +486,7 @@ if ($shop) {
                     <button class="btn btn-primary">Save Changes</button>
                 </form>
             </section>
-            <section class="card" style="display:flex;flex-direction:column;gap:.9rem;">
+            <section class="card" style="display:flex;flex-direction:column;gap:.95rem;">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.75rem;">
                     <h2 style="margin:0;font-size:1rem;">Services <span style="font-size:.6rem;color:#6b8299;">(<?= count($services) ?>)</span></h2>
                     <form method="post" style="display:flex;gap:.5rem;align-items:flex-end;flex-wrap:wrap;">
@@ -487,6 +562,8 @@ if ($shop) {
                 </div>
             </section>
         <?php endif; ?>
+        <?php // Customer Conversations removed; moved to dedicated Messages page 
+        ?>
         <footer class="footer" style="margin-top:2rem;">&copy; <?= date('Y') ?> BarberSure</footer>
     </main>
     <script>
@@ -545,6 +622,7 @@ if ($shop) {
         })();
     </script>
     <script src="../assets/js/menu-toggle.js"></script>
+    <!-- owner_chat.js removed; messaging now on dedicated Messages page -->
 </body>
 
 </html>

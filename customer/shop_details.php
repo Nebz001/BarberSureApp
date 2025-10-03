@@ -23,7 +23,7 @@ if (empty($error)) {
     $hasClose = in_array('close_time', $cols, true);
     $hasPhone = in_array('shop_phone', $cols, true);
 
-    $selectCols = "s.shop_id, s.owner_id, s.shop_name, s.description, s.address, s.city, s.status, s.registered_at";
+    $selectCols = "s.shop_id, s.owner_id, s.shop_name, s.description, s.address, s.city, s.status, s.registered_at, (SELECT full_name FROM Users uo WHERE uo.user_id = s.owner_id) AS owner_name";
     if ($hasPhone) $selectCols .= ", s.shop_phone";
     if ($hasOpen) $selectCols .= ", s.open_time";
     if ($hasClose) $selectCols .= ", s.close_time";
@@ -219,15 +219,25 @@ function fmt_time_pretty($t)
                                             <?php endif; ?>
                                         </div>
                                     </div>
-                                    <div>
+                                    <div class="d-flex flex-column align-items-end gap-2">
                                         <?php if (!$user): ?>
                                             <a class="btn btn-sm cta-book" href="../login.php?next=customer/booking.php%3Fshop%3D<?= (int)$shop['shop_id'] ?>">
                                                 <i class="bi bi-box-arrow-in-right me-1"></i> Sign in to Book
                                             </a>
                                         <?php elseif ($role === 'customer'): ?>
-                                            <a class="btn btn-sm cta-book" href="booking.php?shop=<?= (int)$shop['shop_id'] ?>">
-                                                <i class="bi bi-calendar2-check me-1"></i> Book Now
-                                            </a>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <a class="btn btn-sm cta-book" href="booking.php?shop=<?= (int)$shop['shop_id'] ?>">
+                                                    <i class="bi bi-calendar2-check me-1"></i> Book Now
+                                                </a>
+                                                <?php
+                                                // Pre-booking ephemeral channel (customer + shop only) using session id + shop id
+                                                $sessionId = session_id();
+                                                $preChannel = 'pre_' . (int)$shop['shop_id'] . '_' . substr(hash('sha256', $sessionId . '|' . (int)$shop['shop_id']), 0, 20);
+                                                ?>
+                                                <button type="button" class="btn btn-sm btn-outline-light" id="openPreChat" data-channel="<?= e($preChannel) ?>" style="background:#1b2530;border:1px solid #22303d;font-weight:600;letter-spacing:.4px;">
+                                                    <i class="bi bi-chat-dots me-1"></i> Message Shop
+                                                </button>
+                                            </div>
                                         <?php elseif ($isOwnerOfShop): ?>
                                             <a class="btn btn-sm cta-book" href="../owner/manage_shop.php">
                                                 <i class="bi bi-tools me-1"></i> Manage Shop
@@ -257,6 +267,12 @@ function fmt_time_pretty($t)
                                         <div class="d-flex align-items-center gap-2 muted">
                                             <i class="bi bi-clock-fill" style="color:#fbbf24"></i>
                                             <span>Open: <?= e(fmt_time_pretty($openT)) ?> &ndash; <?= e(fmt_time_pretty($closeT)) ?></span>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if (!empty($shop['owner_name'])): ?>
+                                        <div class="d-flex align-items-center gap-2 muted">
+                                            <i class="bi bi-person-badge-fill" style="color:#fbbf24"></i>
+                                            <span>Owner: <?= e($shop['owner_name']) ?></span>
                                         </div>
                                     <?php endif; ?>
                                     <?php if (!empty($shop['shop_phone'])): ?>
@@ -333,11 +349,41 @@ function fmt_time_pretty($t)
                 <?php endif; ?>
             </div>
         </section>
+        <footer class="dashboard-footer">&copy; <?= date('Y') ?> BarberSure • View Barbershop.</footer>
     </main>
 
-    <?php include __DIR__ . '/../partials/public_footer.php'; ?>
-
+    <div id="preChatModal" class="modal fade" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content" style="background:#141b22;border:1px solid #22303d;">
+                <div class="modal-header" style="border-color:#22303d;">
+                    <h5 class="modal-title" style="font-weight:700;letter-spacing:.4px;display:flex;align-items:center;gap:.6rem;">
+                        <i class="bi bi-chat-dots" style="color:#fbbf24;"></i> Chat with Shop
+                        <span style="font-size:.55rem;letter-spacing:.5px;font-weight:600;background:#1b2530;border:1px solid #22303d;padding:.25rem .55rem;border-radius:40px;">Ephemeral</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="preChatBody" style="padding:1rem 1.1rem 1.2rem;">
+                    <div class="d-flex flex-wrap gap-3" style="align-items:stretch;justify-content:space-between;">
+                        <div class="pre-chat-messages" style="flex:2 1 520px;min-width:360px;display:flex;flex-direction:column;gap:.7rem;background:#1b2530;border:1px solid #22303d;border-radius:12px;padding:.75rem .8rem;max-height:420px;overflow-y:auto;font-size:.72rem;line-height:1.45;">
+                            <div class="text-center text-muted" style="font-size:.62rem;">Ask about pricing, availability, or a style. Messages auto-clear.</div>
+                        </div>
+                        <form id="preChatForm" style="flex:1 1 320px;min-width:280px;display:flex;flex-direction:column;gap:.75rem;">
+                            <div style="display:flex;flex-direction:column;gap:.4rem;">
+                                <label style="font-size:.6rem;letter-spacing:.5px;font-weight:600;color:#9aa5b1;">Message</label>
+                                <textarea rows="10" placeholder="Type your question here…" style="flex:1;background:#1b2530;border:1px solid #22303d;color:#e5ebf1;border-radius:12px;padding:.7rem .75rem;font-size:.7rem;resize:vertical;min-height:220px;line-height:1.5;"></textarea>
+                            </div>
+                            <div style="display:flex;gap:.7rem;align-items:center;flex-wrap:wrap;">
+                                <button type="submit" class="btn btn-sm cta-book" style="font-size:.7rem;padding:.65rem 1.1rem;font-weight:600;">Send</button>
+                                <span class="text-muted" style="font-size:.55rem;">Channel: <span id="preChatChannelLabel"></span></span>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="../assets/js/pre_chat.js"></script>
 </body>
 
 </html>

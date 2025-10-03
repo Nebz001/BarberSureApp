@@ -223,14 +223,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <body class="dashboard-wrapper">
     <header class="header-bar">
+        <button class="nav-hamburger" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="customerNav">☰</button>
         <div class="header-brand">
             <span>BarberSure <span style="opacity:.55;font-weight:500;">Customer</span></span>
             <span class="header-badge">Welcome<?= $user ? ', ' . e(explode(' ', trim(($user['full_name'] ?? $sessionUser['full_name']) ?? ''))[0]) : '' ?></span>
         </div>
-        <nav class="nav-links">
+        <nav id="customerNav" class="nav-links">
             <a href="dashboard.php">Dashboard</a>
             <a href="search.php">Find Shops</a>
-            <a href="booking.php">Book</a>
             <a href="bookings_history.php">History</a>
             <a class="active" href="profile.php">Profile</a>
             <form action="../logout.php" method="post" onsubmit="return confirm('Log out now?');" style="margin:0;">
@@ -345,6 +345,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </form>
         </section>
+        <footer class="dashboard-footer">&copy; <?= date('Y') ?> BarberSure • View Your Profile.</footer>
     </main>
     <script>
         // Keep hidden full phone in sync with local part; prefix is fixed '+63'
@@ -391,6 +392,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
         })();
     </script>
+    <script src="../assets/js/menu-toggle.js"></script>
 </body>
 
 </html>

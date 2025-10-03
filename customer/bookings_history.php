@@ -164,14 +164,14 @@ function page_link_hist($p)
 
 <body class="dashboard-wrapper">
     <header class="header-bar">
+        <button class="nav-hamburger" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="customerNav">☰</button>
         <div class="header-brand">
             <span>BarberSure <span style="opacity:.55;font-weight:500;">Customer</span></span>
             <span class="header-badge">Welcome<?= $user ? ', ' . e(explode(' ', trim($user['full_name']))[0]) : '' ?></span>
         </div>
-        <nav class="nav-links">
+        <nav id="customerNav" class="nav-links">
             <a href="dashboard.php">Dashboard</a>
             <a href="search.php">Find Shops</a>
-            <a href="booking.php">Book</a>
             <a class="active" href="bookings_history.php">History</a>
             <a href="profile.php">Profile</a>
             <form action="../logout.php" method="post" onsubmit="return confirm('Log out now?');" style="margin:0;">
@@ -230,7 +230,7 @@ function page_link_hist($p)
                     <?php foreach ($rows as $r): $dt = strtotime($r['appointment_date']);
                         $dateFmt = date('M d, Y g:i A', $dt);
                         $statusClass = 'st-' . $r['status']; ?>
-                        <div class="hist-item">
+                        <div class="hist-item" data-appt="<?= (int)$r['appointment_id'] ?>">
                             <div class="hist-top">
                                 <h3 class="hist-shop" style="margin:0;"><?= e($r['shop_name']) ?></h3>
                                 <span class="badge-status <?= e($statusClass) ?>"><?= strtoupper(e($r['status'])) ?></span>
@@ -248,6 +248,11 @@ function page_link_hist($p)
                             if ($hasNotes): ?><div class="notes"><?= e(strlen($r['notes']) > 160 ? substr($r['notes'], 0, 158) . '…' : $r['notes']) ?></div><?php endif; ?>
                             <div class="hist-actions" style="margin-top:.25rem;">
                                 <button type="button" class="details-toggle" data-target="det-<?= (int)$r['appointment_id'] ?>">Details</button>
+                                <?php
+                                // Per-booking chat channel (appointment context) — allows discussion tied to this appointment
+                                $bookingChannel = 'bk_' . (int)$r['appointment_id'] . '_' . substr(hash('sha256', session_id() . '|appt|' . (int)$r['appointment_id']), 0, 16);
+                                ?>
+                                <button type="button" class="booking-chat-open" data-channel="<?= e($bookingChannel) ?>" data-appt="<?= (int)$r['appointment_id'] ?>" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text-soft);font-size:.55rem;padding:.35rem .6rem;border-radius:var(--radius-sm);cursor:pointer;font-weight:600;letter-spacing:.45px;">Chat</button>
                                 <?php $isFuture = $dt >= time() - 300;
                                 $canCancel = $isFuture && in_array($r['status'], ['pending', 'confirmed']);
                                 if ($canCancel): ?>
@@ -294,6 +299,14 @@ function page_link_hist($p)
                                     </tr>
                                 </table>
                             </div>
+                            <div class="booking-chat-box" id="chat-box-<?= (int)$r['appointment_id'] ?>" data-loaded="0" style="display:none;margin-top:.5rem;border:1px solid var(--c-border);background:var(--c-surface);border-radius:var(--radius-sm);padding:.55rem .6rem;">
+                                <div class="chat-lines" style="display:flex;flex-direction:column;gap:.45rem;max-height:200px;overflow-y:auto;font-size:.58rem;line-height:1.4;"></div>
+                                <form class="chat-send" style="margin-top:.45rem;display:flex;gap:.4rem;align-items:flex-start;">
+                                    <textarea rows="2" placeholder="Message..." style="flex:1;background:var(--c-bg-alt);border:1px solid var(--c-border-soft);color:var(--c-text);border-radius:var(--radius-sm);padding:.4rem .5rem;font-size:.6rem;resize:vertical;min-height:54px;max-height:120px;"></textarea>
+                                    <button type="submit" class="btn" style="font-size:.55rem;padding:.5rem .7rem;">Send</button>
+                                </form>
+                                <div style="font-size:.5rem;color:var(--c-text-soft);margin-top:.3rem;">Contextual chat • Not stored in database • Auto-clears</div>
+                            </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -323,6 +336,8 @@ function page_link_hist($p)
             });
         });
     </script>
+    <script src="../assets/js/booking_thread_chat.js"></script>
+    <script src="../assets/js/menu-toggle.js"></script>
 </body>
 
 </html>

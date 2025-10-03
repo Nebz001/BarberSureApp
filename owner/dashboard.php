@@ -216,6 +216,7 @@ if (!$isVerified) {
             <a class="active" href="dashboard.php">Dashboard</a>
             <a href="manage_shop.php">Manage Shop</a>
             <a href="bookings.php">Bookings</a>
+            <a href="messages.php">Messages</a>
             <a href="payments.php">Payments</a>
             <a href="profile.php">Profile</a>
             <form action="../logout.php" method="post" onsubmit="return confirm('Log out now?');" style="margin:0;">

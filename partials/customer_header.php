@@ -12,7 +12,6 @@ $user = current_user();
     <nav class="nav-links">
         <a href="../customer/dashboard.php">Dashboard</a>
         <a href="../customer/search.php">Find Shops</a>
-        <a href="../customer/booking.php">Book</a>
         <a href="../customer/bookings_history.php">History</a>
         <a href="../customer/profile.php">Profile</a>
         <form action="../logout.php" method="post" onsubmit="return confirm('Log out now?');" style="margin:0;">
