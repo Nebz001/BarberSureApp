@@ -11,8 +11,8 @@ $rateLimited = false;
 function recent_reset_count($email)
 {
     global $pdo;
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM Password_Resets pr JOIN Users u ON pr.user_id=u.user_id WHERE u.email=? AND pr.requested_at > (NOW() - INTERVAL 15 MINUTE)");
-    $stmt->execute([$email]);
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM Password_Resets pr JOIN Users u ON pr.user_id=u.user_id WHERE TRIM(LOWER(u.email)) = ? AND pr.requested_at > (NOW() - INTERVAL 15 MINUTE)");
+    $stmt->execute([strtolower(trim($email))]);
     return (int)$stmt->fetchColumn();
 }
 
@@ -26,8 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (!$errors) {
         // Silent success if user not found (avoid enumeration)
-        $userStmt = $pdo->prepare('SELECT user_id, email FROM Users WHERE LOWER(email)=LOWER(?) LIMIT 1');
-        $userStmt->execute([$email]);
+        $userStmt = $pdo->prepare('SELECT user_id, email FROM Users WHERE TRIM(LOWER(email)) = ? LIMIT 1');
+        $userStmt->execute([strtolower(trim($email))]);
         $user = $userStmt->fetch(PDO::FETCH_ASSOC);
         if ($user) {
             if (recent_reset_count($email) >= 3) {

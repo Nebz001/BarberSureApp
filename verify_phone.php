@@ -50,6 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $services_raw = $pending['services'] ?? '';
                     $open_time    = $pending['open_time'] ?? '';
                     $close_time   = $pending['close_time'] ?? '';
+                    $latitude     = $pending['latitude'] ?? '';
+                    $longitude    = $pending['longitude'] ?? '';
 
                     global $pdo;
                     if ($role === 'owner') {
@@ -58,8 +60,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $created_user = create_user($full_name, $email, $password, $role, $phone);
                             if ($created_user === false) throw new Exception('Failed to create user.');
                             $owner_id = (int)$created_user['user_id'];
-                            $stmt = $pdo->prepare("INSERT INTO Barbershops (owner_id, shop_name, address, city, status, registered_at) VALUES (?,?,?,?, 'pending', NOW())");
-                            $stmt->execute([$owner_id, $shop_name, $shop_address, $shop_city]);
+                            // Insert barbershop with optional contact, hours, and coordinates
+                            $latVal = ($latitude !== '') ? (float)$latitude : null;
+                            $lngVal = ($longitude !== '') ? (float)$longitude : null;
+                            $sql = "INSERT INTO Barbershops (owner_id, shop_name, address, city, shop_phone, open_time, close_time, latitude, longitude, status, registered_at)
+                                    VALUES (?,?,?,?,?,?,?,?,?, 'pending', NOW())";
+                            $stmt = $pdo->prepare($sql);
+                            $stmt->execute([
+                                $owner_id,
+                                $shop_name,
+                                $shop_address,
+                                $shop_city,
+                                $shop_phone !== '' ? $shop_phone : null,
+                                $open_time !== '' ? $open_time : null,
+                                $close_time !== '' ? $close_time : null,
+                                $latVal,
+                                $lngVal
+                            ]);
                             $shop_id = (int)$pdo->lastInsertId();
                             if ($services_raw !== '') {
                                 $services = preg_split('/[\r\n,]+/', $services_raw);

@@ -16,17 +16,21 @@ $reviews = [];
 
 if (empty($error)) {
     // Detect optional columns so we don't break on older schemas
-    $colStmt = $pdo->prepare("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME='Barbershops' AND COLUMN_NAME IN ('open_time','close_time','shop_phone')");
+    $colStmt = $pdo->prepare("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME='Barbershops' AND COLUMN_NAME IN ('open_time','close_time','shop_phone','latitude','longitude')");
     $colStmt->execute();
     $cols = $colStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
     $hasOpen = in_array('open_time', $cols, true);
     $hasClose = in_array('close_time', $cols, true);
     $hasPhone = in_array('shop_phone', $cols, true);
+    $hasLat = in_array('latitude', $cols, true);
+    $hasLng = in_array('longitude', $cols, true);
 
     $selectCols = "s.shop_id, s.owner_id, s.shop_name, s.description, s.address, s.city, s.status, s.registered_at, (SELECT full_name FROM Users uo WHERE uo.user_id = s.owner_id) AS owner_name";
     if ($hasPhone) $selectCols .= ", s.shop_phone";
     if ($hasOpen) $selectCols .= ", s.open_time";
     if ($hasClose) $selectCols .= ", s.close_time";
+    if ($hasLat) $selectCols .= ", s.latitude";
+    if ($hasLng) $selectCols .= ", s.longitude";
 
     // Fetch shop with rating stats; only show approved shops publicly
     $sql = "SELECT $selectCols,
@@ -161,6 +165,41 @@ function fmt_time_pretty($t)
         .muted {
             color: #9aa5b1;
         }
+
+        .map-card {
+            background: #141b22;
+            border: 1px solid #1f2a36;
+            border-radius: 16px;
+            padding: 1rem;
+        }
+
+        .mini-map {
+            width: 100%;
+            aspect-ratio: 16 / 10;
+            border: 0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .map-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+            margin-top: .6rem;
+        }
+
+        .map-actions .btn-directions {
+            background: #1b2530;
+            border: 1px solid #22303d;
+            color: #e5ebf1;
+            font-weight: 600;
+            letter-spacing: .4px;
+        }
+
+        .map-actions .btn-directions:hover {
+            filter: brightness(1.06);
+        }
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -288,6 +327,36 @@ function fmt_time_pretty($t)
                                     <?php endif; ?>
                                 </div>
                             </div>
+
+                            <?php
+                            $lat = isset($shop['latitude']) ? (float)$shop['latitude'] : null;
+                            $lng = isset($shop['longitude']) ? (float)$shop['longitude'] : null;
+                            $hasCoords = ($lat !== null && $lng !== null);
+                            $addrStr = trim(($shop['address'] ?? '') . ' ' . ($shop['city'] ?? ''));
+                            $mapSrc = '';
+                            $directionsHref = '';
+                            if ($hasCoords) {
+                                $mapSrc = 'https://www.google.com/maps?q=' . rawurlencode(number_format($lat, 6, '.', '') . ',' . number_format($lng, 6, '.', '')) . '&z=16&output=embed';
+                                $directionsHref = 'https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode(number_format($lat, 6, '.', '') . ',' . number_format($lng, 6, '.', '')) . '&travelmode=driving';
+                            } elseif ($addrStr !== '') {
+                                $mapSrc = 'https://www.google.com/maps?q=' . rawurlencode($addrStr) . '&z=15&output=embed';
+                                $directionsHref = 'https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode($addrStr) . '&travelmode=driving';
+                            }
+                            if ($mapSrc !== ''): ?>
+                                <div class="map-card mt-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h2 class="h6 mb-0" style="letter-spacing:.3px;">Location</h2>
+                                        <span class="chip">Map Preview</span>
+                                    </div>
+                                    <iframe class="mini-map" src="<?= e($mapSrc) ?>" loading="lazy" referrerpolicy="no-referrer-when-downgrade" aria-label="Shop location on Google Maps"></iframe>
+                                    <div class="map-actions">
+                                        <small class="text-muted">Powered by Google Maps</small>
+                                        <a class="btn btn-sm btn-directions" target="_blank" rel="noopener" href="<?= e($directionsHref) ?>">
+                                            <i class="bi bi-geo-alt-fill me-1" style="color:#fbbf24"></i> Get Directions
+                                        </a>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
 
                             <div class="mt-4">
                                 <h2 class="h5 mb-3">Services</h2>

@@ -29,6 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $fullName = trim($_POST['full_name'] ?? '');
                 $email = trim($_POST['email'] ?? '');
                 $phone = trim($_POST['phone'] ?? '');
+                if ($phone === '' && isset($_POST['phone_local'])) {
+                    $pl = trim((string)$_POST['phone_local']);
+                    $phone = $pl !== '' ? ('+63 ' . $pl) : $phone;
+                }
                 $username = trim($_POST['username'] ?? '');
 
                 // Validation
@@ -38,8 +42,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // Check if phone number follows Philippines format (if provided)
                 if (!empty($phone)) {
-                    if (!preg_match('/^639\d{9}$/', $phone)) {
-                        throw new Exception('Phone must be in format 639XXXXXXXXX (Philippines mobile).');
+                    // Extract digits only from full phone (+63 9xxxxxxxxx)
+                    $phoneDigits = preg_replace('/\D/', '', $phone);
+                    if (!preg_match('/^639\d{9}$/', $phoneDigits)) {
+                        throw new Exception('Phone number must be exactly 10 digits after +63 (starting with 9).');
                     }
                 }
 
@@ -81,6 +87,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $refreshStmt = $pdo->prepare("SELECT * FROM Users WHERE user_id = ?");
                 $refreshStmt->execute([$ownerId]);
                 $user = $refreshStmt->fetch(PDO::FETCH_ASSOC);
+                // Update session snapshot too for consistency
+                if (isset($_SESSION['user'])) {
+                    $_SESSION['user']['full_name'] = $user['full_name'] ?? $_SESSION['user']['full_name'];
+                    $_SESSION['user']['email'] = $user['email'] ?? $_SESSION['user']['email'];
+                    $_SESSION['user']['phone'] = $user['phone'] ?? $_SESSION['user']['phone'] ?? null;
+                    $_SESSION['user']['username'] = $user['username'] ?? $_SESSION['user']['username'] ?? null;
+                }
             } catch (Exception $e) {
                 $statusError = $e->getMessage();
             }
@@ -557,11 +570,24 @@ function format_currency($amount)
                         </label>
 
                         <label>Phone Number
-                            <input name="phone" value="<?= e($user['phone'] ?? '') ?>" placeholder="639XXXXXXXXX" maxlength="20" />
+                            <?php
+                            $fullPhone = trim((string)($user['phone'] ?? ''));
+                            $localPart = '';
+                            if ($fullPhone !== '' && strpos($fullPhone, '+63') === 0) {
+                                $localPart = ltrim(substr($fullPhone, 3));
+                            } elseif ($fullPhone !== '') {
+                                $localPart = $fullPhone; // legacy fallback if stored without +63
+                            }
+                            ?>
+                            <div class="phone-group" style="display:flex;align-items:center;gap:.4rem;">
+                                <span class="phone-prefix" style="background:#111c27;border:1px solid #253344;color:#93adc7;padding:.5rem .55rem;border-radius:8px;font-weight:600;letter-spacing:.4px;">+63</span>
+                                <input type="tel" id="owner_phone_local" name="phone_local" value="<?= e($localPart) ?>" placeholder="9xx xxx xxxx" pattern="^9\d{9}$" inputmode="tel" maxlength="10" style="flex:1;" />
+                                <input type="hidden" name="phone" id="owner_phone_full" value="<?= e($fullPhone !== '' ? $fullPhone : '+63 ') ?>" />
+                            </div>
                         </label>
                     </div>
 
-                    <p class="mini-note">Phone number must follow Philippines format: 639XXXXXXXXX</p>
+                    <p class="mini-note">Phone number must be exactly 10 digits after +63 (starting with 9).</p>
 
                     <button type="submit" class="btn btn-primary">Update Profile</button>
                 </form>
@@ -695,6 +721,28 @@ function format_currency($amount)
                 }
             });
         });
+    </script>
+    <script>
+        // Sync owner personal phone with fixed +63 prefix
+        (function syncOwnerPersonalPhone() {
+            const local = document.getElementById('owner_phone_local');
+            const full = document.getElementById('owner_phone_full');
+            if (!local || !full) return;
+
+            function update() {
+                const v = (local.value || '').replace(/\D+/g, '');
+                // Allow typing spaces/dashes visually but keep digits-only in hidden when combined
+                full.value = '+63' + (v ? ' ' + v : ' ');
+                // Enforce pattern gently: only digits, max 10, starting with 9
+                if (/^\d{1,10}$/.test(v)) {
+                    if (v.length > 0 && v[0] !== '9') {
+                        // no intrusive correction; pattern attribute will block submit
+                    }
+                }
+            }
+            ['input', 'change', 'blur'].forEach(evt => local.addEventListener(evt, update));
+            update();
+        })();
     </script>
 </body>
 

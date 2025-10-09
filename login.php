@@ -42,7 +42,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!$errors && !authenticate($email, $password)) {
-        $errors[] = "Invalid credentials.";
+        $reason = function_exists('auth_last_error') ? auth_last_error() : null;
+        if ($reason === 'suspended') {
+            $errors[] = "Your account is suspended. Please contact support or an admin.";
+        } elseif ($reason === 'empty_hash') {
+            $errors[] = "Your account has no password set. Please use Forgot Password to set a new one.";
+        } else {
+            $errors[] = "Invalid credentials.";
+        }
     }
 
     if (!$errors) {

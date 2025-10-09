@@ -21,37 +21,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_broadcast'])) 
         $titleB = trim($_POST['title'] ?? '');
         $message = trim($_POST['message'] ?? '');
         $audience = $_POST['audience'] ?? 'all';
-        // Force email-only notifications; ignore user-supplied channels
-        $channels = ['email'];
-        $scheduleAt = trim($_POST['scheduled_at'] ?? '');
-        $scheduleAt = $scheduleAt !== '' ? date('Y-m-d H:i:s', strtotime($scheduleAt)) : null;
         if ($titleB && $message) {
-            try {
-                // Duplicate guard: ignore if same title+message created within last 60s
-                $chk = $pdo->prepare("SELECT broadcast_id FROM Notification_Broadcasts WHERE title=? AND message=? AND created_at >= (NOW() - INTERVAL 60 SECOND) ORDER BY broadcast_id DESC LIMIT 1");
-                $chk->execute([$titleB, $message]);
-                if ($dup = $chk->fetch(PDO::FETCH_ASSOC)) {
-                    $_SESSION['flash_notifications'] = ['type' => 'warning', 'text' => 'Duplicate ignored (broadcast #' . (int)$dup['broadcast_id'] . ' just created)'];
-                    header('Location: notifications.php?dup=1');
-                    exit;
-                }
-                // Optional links removed: simplified insert
-                $stmt = $pdo->prepare("INSERT INTO Notification_Broadcasts (title,message,channels,audience,scheduled_at,created_by) VALUES (?,?,?,?,?,?)");
-                $stmt->execute([$titleB, $message, implode(',', $channels), $audience, $scheduleAt, current_user()['user_id']]);
-                $bid = (int)$pdo->lastInsertId();
-                if (!$scheduleAt || strtotime($scheduleAt) <= time()) {
-                    // queue immediately
-                    $targets = build_broadcast_targets($audience);
-                    queue_notification_broadcast($bid, $targets, $channels);
-                }
-                $_SESSION['flash_notifications'] = ['type' => 'success', 'text' => 'Broadcast created' . ($scheduleAt ? ' (scheduled)' : ' & queued')];
-                header('Location: notifications.php?created=1');
-                exit;
-            } catch (Throwable $e) {
-                $_SESSION['flash_notifications'] = ['type' => 'danger', 'text' => 'Create failed'];
-                header('Location: notifications.php?error=1');
-                exit;
+            // Fetch target users by audience
+            $roleCond = '';
+            if ($audience === 'owners') $roleCond = "WHERE role='owner'";
+            elseif ($audience === 'customers') $roleCond = "WHERE role='customer'";
+            // Build SQL ensuring only users with a non-empty email are selected
+            $sql = "SELECT user_id, email, full_name FROM Users ";
+            if ($roleCond) {
+                $sql .= $roleCond . " AND email IS NOT NULL AND email <> '' ";
+            } else {
+                $sql .= "WHERE email IS NOT NULL AND email <> '' ";
             }
+            $sql .= "ORDER BY user_id ASC";
+            $q = $pdo->query($sql);
+            $targets = $q->fetchAll(PDO::FETCH_ASSOC);
+            $sent = 0;
+            $fail = 0;
+            $failures = [];
+            require_once __DIR__ . '/../config/mailer.php';
+            foreach ($targets as $user) {
+                $to = $user['email'];
+                $subject = $titleB;
+                $html = nl2br(e($message));
+                $text = $message;
+                $result = send_app_email($to, $subject, $html, $text);
+                if ($result['sent']) {
+                    $sent++;
+                } else {
+                    $fail++;
+                    $failures[] = $to;
+                }
+            }
+            $_SESSION['flash_notifications'] = [
+                'type' => ($fail ? 'warning' : 'success'),
+                'text' => "Notification sent to $sent user(s)" . ($fail ? ", $fail failed." : ".")
+            ];
+            if ($fail) $_SESSION['flash_notifications']['failures'] = $failures;
+            header('Location: notifications.php?sent=1');
+            exit;
         } else {
             $_SESSION['flash_notifications'] = ['type' => 'warning', 'text' => 'Title and message required'];
             header('Location: notifications.php?missing=1');

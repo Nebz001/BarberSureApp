@@ -46,9 +46,22 @@ if (!$shop && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') 
         $shop_name = trim($_POST['shop_name'] ?? '');
         $address = trim($_POST['address'] ?? '');
         $city = trim($_POST['city'] ?? '');
+        // Optional coordinates
+        $lat = isset($_POST['latitude']) && $_POST['latitude'] !== '' ? (float)$_POST['latitude'] : null;
+        $lng = isset($_POST['longitude']) && $_POST['longitude'] !== '' ? (float)$_POST['longitude'] : null;
+        if ($lat !== null && ($lat < -90 || $lat > 90)) throw new Exception('Latitude out of range.');
+        if ($lng !== null && ($lng < -180 || $lng > 180)) throw new Exception('Longitude out of range.');
+        if ($lat !== null) $lat = round($lat, 6);
+        if ($lng !== null) $lng = round($lng, 6);
         if ($shop_name === '' || $address === '' || $city === '') throw new Exception('All fields required.');
-        $ins = $pdo->prepare("INSERT INTO Barbershops (owner_id, shop_name, address, city, status, registered_at) VALUES (?,?,?,?, 'pending', NOW())");
-        $ins->execute([$ownerId, $shop_name, $address, $city]);
+        // Insert with optional coordinates if provided
+        if ($lat !== null && $lng !== null) {
+            $ins = $pdo->prepare("INSERT INTO Barbershops (owner_id, shop_name, address, city, latitude, longitude, status, registered_at) VALUES (?,?,?,?,?,?, 'pending', NOW())");
+            $ins->execute([$ownerId, $shop_name, $address, $city, $lat, $lng]);
+        } else {
+            $ins = $pdo->prepare("INSERT INTO Barbershops (owner_id, shop_name, address, city, status, registered_at) VALUES (?,?,?,?, 'pending', NOW())");
+            $ins->execute([$ownerId, $shop_name, $address, $city]);
+        }
         $notices[] = 'Shop created successfully (pending approval).';
         // Refresh shop lists after creation
         $stmtAll->execute([$ownerId]);
@@ -69,15 +82,33 @@ if ($shop && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') =
         $shop_name = trim($_POST['shop_name'] ?? '');
         $address = trim($_POST['address'] ?? '');
         $city = trim($_POST['city'] ?? '');
-        $shop_phone = trim($_POST['shop_phone'] ?? '');
+        // Optional shop phone using +63 prefix UX
+        $shop_phone_local = trim($_POST['shop_phone_local'] ?? '');
+        if ($shop_phone_local !== '') {
+            $digitsLocal = preg_replace('/\D/', '', $shop_phone_local);
+            if (strlen($digitsLocal) > 10) $digitsLocal = substr($digitsLocal, 0, 10);
+            $shop_phone = '+63 ' . $digitsLocal;
+        } else {
+            $shop_phone = trim($_POST['shop_phone'] ?? '');
+            if ($shop_phone === '+63' || $shop_phone === '+63 ') $shop_phone = '';
+        }
         $open_time = trim($_POST['open_time'] ?? '');
         $close_time = trim($_POST['close_time'] ?? '');
         $description = trim($_POST['description'] ?? '');
+        // Optional coordinates
+        $lat = isset($_POST['latitude']) && $_POST['latitude'] !== '' ? (float)$_POST['latitude'] : null;
+        $lng = isset($_POST['longitude']) && $_POST['longitude'] !== '' ? (float)$_POST['longitude'] : null;
+        if ($lat !== null && ($lat < -90 || $lat > 90)) throw new Exception('Latitude out of range.');
+        if ($lng !== null && ($lng < -180 || $lng > 180)) throw new Exception('Longitude out of range.');
+        if ($lat !== null) $lat = round($lat, 6);
+        if ($lng !== null) $lng = round($lng, 6);
         if ($shop_name === '' || $address === '' || $city === '') throw new Exception('Required fields missing.');
         // Optional shop phone validation: must follow +63 9XXXXXXXXX pattern if provided
         if ($shop_phone !== '') {
             $digits = preg_replace('/\D/', '', $shop_phone);
-            if (!preg_match('/^639\d{9}$/', $digits)) {
+            if ($digits === '') {
+                $shop_phone = '';
+            } else if (!preg_match('/^639\d{9}$/', $digits)) {
                 throw new Exception('Shop contact number must be exactly 10 digits after +63 (starting with 9).');
             }
         }
@@ -90,8 +121,20 @@ if ($shop && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') =
             }
             if ($open_time >= $close_time) throw new Exception('Opening time must be before closing time.');
         }
-        $upd = $pdo->prepare("UPDATE Barbershops SET shop_name=?, address=?, city=?, description=?, shop_phone=?, open_time=?, close_time=? WHERE shop_id=? AND owner_id=?");
-        $upd->execute([$shop_name, $address, $city, $description ?: null, $shop_phone ?: null, $open_time ?: null, $close_time ?: null, $shop['shop_id'], $ownerId]);
+        $upd = $pdo->prepare("UPDATE Barbershops SET shop_name=?, address=?, city=?, description=?, shop_phone=?, open_time=?, close_time=?, latitude=?, longitude=? WHERE shop_id=? AND owner_id=?");
+        $upd->execute([
+            $shop_name,
+            $address,
+            $city,
+            $description ?: null,
+            $shop_phone ?: null,
+            $open_time ?: null,
+            $close_time ?: null,
+            $lat,
+            $lng,
+            $shop['shop_id'],
+            $ownerId
+        ]);
         $notices[] = 'Shop details updated.';
         // Reload selected shop to reflect changes
         $stmtAll->execute([$ownerId]);
@@ -192,6 +235,8 @@ if ($shop) {
     <link rel="stylesheet" href="../assets/css/owner.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- Leaflet CSS for map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <style>
         .form-grid {
             display: grid;
@@ -379,6 +424,32 @@ if ($shop) {
             color: #69839b;
             margin: .2rem 0 .4rem;
         }
+
+        /* Map container styling */
+        .map-wrap {
+            background: #0f1a24;
+            border: 1px solid #223142;
+            border-radius: 10px;
+            padding: .5rem;
+        }
+
+        .map-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: .4rem;
+            gap: .5rem;
+            font-size: .6rem;
+            color: #7fa6c7;
+        }
+
+        #shopMapUpdate,
+        #shopMapCreate {
+            width: 100%;
+            height: 280px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
     </style>
 </head>
 
@@ -444,6 +515,19 @@ if ($shop) {
                         <label>City<input name="city" required></label>
                     </div>
                     <label>Address<textarea name="address" required></textarea></label>
+                    <div class="map-wrap" style="margin-top:.6rem;">
+                        <div class="map-toolbar">
+                            <strong style="letter-spacing:.4px;">Pin Location (optional)</strong>
+                            <div style="display:flex;gap:.5rem;align-items:center;">
+                                <button type="button" class="btn btn-small" id="geoBtnCreate" style="font-size:.6rem;">Use my location</button>
+                                <span id="coordsCreate" class="mini-note">Lat/Lng: —</span>
+                            </div>
+                        </div>
+                        <div id="shopMapCreate" role="region" aria-label="Shop location map"></div>
+                        <input type="hidden" name="latitude" id="latitudeCreate" />
+                        <input type="hidden" name="longitude" id="longitudeCreate" />
+                        <div class="mini-note">Drag the pin or click the map to set your shop location. This helps customers find you.</div>
+                    </div>
                     <button class="btn btn-primary" style="margin-top:.8rem;">Create Shop</button>
                 </form>
             </section>
@@ -482,6 +566,23 @@ if ($shop) {
                     </div>
                     <label>Address<textarea name="address" required><?= e($shop['address']) ?></textarea></label>
                     <label>Description<textarea name="description" placeholder="Describe your shop, specialties, parking, etc."><?= e($shop['description'] ?? '') ?></textarea></label>
+                    <div class="map-wrap">
+                        <div class="map-toolbar">
+                            <strong style="letter-spacing:.4px;">Pin Location (optional)</strong>
+                            <div style="display:flex;gap:.5rem;align-items:center;">
+                                <button type="button" class="btn btn-small" id="geoBtnUpdate" style="font-size:.6rem;">Use my location</button>
+                                <?php
+                                $latVal = isset($shop['latitude']) && $shop['latitude'] !== null ? (float)$shop['latitude'] : null;
+                                $lngVal = isset($shop['longitude']) && $shop['longitude'] !== null ? (float)$shop['longitude'] : null;
+                                ?>
+                                <span id="coordsUpdate" class="mini-note">Lat/Lng: <?= ($latVal !== null && $lngVal !== null) ? e(number_format($latVal, 6) . ', ' . number_format($lngVal, 6)) : '—' ?></span>
+                            </div>
+                        </div>
+                        <div id="shopMapUpdate" role="region" aria-label="Shop location map"></div>
+                        <input type="hidden" name="latitude" id="latitudeUpdate" value="<?= $latVal !== null ? e($latVal) : '' ?>" />
+                        <input type="hidden" name="longitude" id="longitudeUpdate" value="<?= $lngVal !== null ? e($lngVal) : '' ?>" />
+                        <div class="mini-note">Drag the pin or click the map to set your shop location. This helps customers find you.</div>
+                    </div>
                     <p class="mini-note">Status is managed by administrators. Pending shops may have limited visibility.</p>
                     <button class="btn btn-primary">Save Changes</button>
                 </form>
@@ -619,6 +720,151 @@ if ($shop) {
             });
             local.addEventListener('blur', update);
             update();
+        })();
+
+        // Leaflet map initializer (only runs if containers exist)
+        function initMap(containerId, latInputId, lngInputId, coordsLabelId, geoBtnId, initialLat, initialLng) {
+            const mapEl = document.getElementById(containerId);
+            if (!mapEl) return null;
+            const latEl = document.getElementById(latInputId);
+            const lngEl = document.getElementById(lngInputId);
+            const labelEl = document.getElementById(coordsLabelId);
+            const geoBtn = document.getElementById(geoBtnId);
+            // Try to find an address textarea within the same form
+            const formEl = mapEl.closest('form');
+            const addrTextarea = formEl ? formEl.querySelector('textarea[name="address"]') : null;
+
+            const DEFAULT_CENTER = [13.9400, 121.1600]; // Lipa, Batangas approx
+            const startLat = (initialLat != null && !isNaN(initialLat)) ? parseFloat(initialLat) : (latEl && latEl.value ? parseFloat(latEl.value) : null);
+            const startLng = (initialLng != null && !isNaN(initialLng)) ? parseFloat(initialLng) : (lngEl && lngEl.value ? parseFloat(lngEl.value) : null);
+            const start = (startLat != null && startLng != null) ? [startLat, startLng] : DEFAULT_CENTER;
+
+            const map = L.map(mapEl).setView(start, (startLat != null ? 15 : 11));
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            const marker = L.marker(start, {
+                draggable: true
+            }).addTo(map);
+
+            function updateInputs(latlng) {
+                if (latEl) latEl.value = latlng.lat.toFixed(6);
+                if (lngEl) lngEl.value = latlng.lng.toFixed(6);
+                if (labelEl) labelEl.textContent = 'Lat/Lng: ' + latlng.lat.toFixed(6) + ', ' + latlng.lng.toFixed(6);
+                reverseGeocode(latlng.lat, latlng.lng);
+            }
+
+            // If inputs already have values (e.g., update form), reflect them in the label.
+            if ((latEl && latEl.value) && (lngEl && lngEl.value)) {
+                labelEl.textContent = 'Lat/Lng: ' + parseFloat(latEl.value).toFixed(6) + ', ' + parseFloat(lngEl.value).toFixed(6);
+            }
+
+            marker.on('dragend', () => updateInputs(marker.getLatLng()));
+            map.on('click', (e) => {
+                marker.setLatLng(e.latlng);
+                updateInputs(e.latlng);
+            });
+
+            if (geoBtn) {
+                geoBtn.addEventListener('click', () => {
+                    if (!navigator.geolocation) return alert('Geolocation not supported by your browser.');
+                    geoBtn.disabled = true;
+                    geoBtn.textContent = 'Locating…';
+                    navigator.geolocation.getCurrentPosition((pos) => {
+                        const ll = {
+                            lat: pos.coords.latitude,
+                            lng: pos.coords.longitude
+                        };
+                        map.setView(ll, 16);
+                        marker.setLatLng(ll);
+                        updateInputs(ll);
+                        geoBtn.disabled = false;
+                        geoBtn.textContent = 'Use my location';
+                    }, (err) => {
+                        alert('Unable to retrieve location: ' + (err && err.message ? err.message : 'Unknown error'));
+                        geoBtn.disabled = false;
+                        geoBtn.textContent = 'Use my location';
+                    }, {
+                        enableHighAccuracy: true,
+                        timeout: 8000,
+                        maximumAge: 0
+                    });
+                });
+            }
+
+            // Ensure map sizes correctly if inside responsive container
+            setTimeout(() => map.invalidateSize(), 150);
+
+            function reverseGeocode(lat, lng) {
+                if (!addrTextarea) return;
+                // Debounced/retry logic for backend reverse geocoding
+                let fetchController = reverseGeocode._fetchController;
+                if (fetchController) fetchController.abort();
+                fetchController = new AbortController();
+                reverseGeocode._fetchController = fetchController;
+                addrTextarea.value = 'Fetching address…';
+                let attempts = 0;
+                const endpoint = new URL('../api/reverse_geocode.php', window.location.href).toString();
+                const tryFetch = () => {
+                    fetch(`${endpoint}?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`, {
+                            signal: fetchController.signal
+                        })
+                        .then(r => r.ok ? r.json() : Promise.reject(new Error('Reverse geocoding failed')))
+                        .then(data => {
+                            if (!data || !data.address) {
+                                throw new Error('No address found');
+                            }
+                            const a = data.address;
+                            const parts = [];
+                            const hn = a.house_number || '';
+                            const road = a.road || a.residential || a.path || a.pedestrian || a.footway || '';
+                            const street = (hn && road) ? `${hn} ${road}` : (road || hn);
+                            if (street) parts.push(street);
+                            const brgy = a.suburb || a.neighbourhood || a.neighborhood || a.village || a.quarter || a.hamlet || '';
+                            if (brgy) parts.push(`Brgy. ${brgy}`);
+                            const landmark = data.name || a.public_building || a.school || a.hospital || a.college || a.university || a.mall || a.shop || '';
+                            if (landmark && (!street || !street.toLowerCase().includes(String(landmark).toLowerCase()))) {
+                                parts.push(`Near ${landmark}`);
+                            }
+                            const text = parts.filter(Boolean).join('\n');
+                            if (text) {
+                                addrTextarea.value = text;
+                            } else {
+                                addrTextarea.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                            }
+                        })
+                        .catch((err) => {
+                            if (attempts < 2) {
+                                attempts++;
+                                setTimeout(tryFetch, 800 * attempts);
+                            } else {
+                                addrTextarea.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                            }
+                        });
+                };
+                tryFetch();
+            }
+            return map;
+        }
+    </script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        // Initialize maps for update or create forms conditionally
+        (function() {
+            const hasUpdate = document.getElementById('shopMapUpdate');
+            if (hasUpdate) {
+                // PHP injected values
+                const lat = document.getElementById('latitudeUpdate')?.value || null;
+                const lng = document.getElementById('longitudeUpdate')?.value || null;
+                initMap('shopMapUpdate', 'latitudeUpdate', 'longitudeUpdate', 'coordsUpdate', 'geoBtnUpdate', lat, lng);
+            }
+            const hasCreate = document.getElementById('shopMapCreate');
+            if (hasCreate) {
+                initMap('shopMapCreate', 'latitudeCreate', 'longitudeCreate', 'coordsCreate', 'geoBtnCreate', null, null);
+            }
         })();
     </script>
     <script src="../assets/js/menu-toggle.js"></script>

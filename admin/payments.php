@@ -195,6 +195,173 @@ $offlinePending = $pdo->query("SELECT s.subscription_id, b.shop_name, s.plan_typ
 $openDisputes = $pdo->query("SELECT d.dispute_id, d.payment_id, d.reason, d.status, p.amount, p.tax_amount, p.transaction_type, p.payment_status FROM Payment_Disputes d JOIN Payments p ON d.payment_id=p.payment_id WHERE d.status IN ('open','in_review') ORDER BY d.created_at DESC LIMIT 25")->fetchAll(PDO::FETCH_ASSOC);
 $taxSummary = $pdo->query("SELECT DATE_FORMAT(p.paid_at,'%Y-%m') ym, SUM(p.amount) gross, SUM(p.tax_amount) tax FROM Payments p WHERE p.payment_status='completed' GROUP BY ym ORDER BY ym DESC LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
 
+// ------------------------------------------------------------------
+// Export handler (CSV) - uses current filters; exports all filtered rows
+// ------------------------------------------------------------------
+if (isset($_GET['export']) && strtolower($_GET['export']) === 'csv') {
+    // Prepare CSV output
+    $filename = 'payments_export_' . date('Ymd_His') . '.csv';
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename=' . $filename);
+    // Optional BOM for Excel compatibility
+    echo "\xEF\xBB\xBF";
+    $out = fopen('php://output', 'w');
+    // Headers
+    fputcsv($out, [
+        'ID',
+        'Type',
+        'Shop',
+        'User',
+        'Email',
+        'Plan',
+        'Valid From',
+        'Valid To',
+        'Gross',
+        'Tax',
+        'Status',
+        'Method',
+        'Paid At',
+        'Created At'
+    ]);
+    foreach ($allRows as $r) {
+        $id = $r['row_kind'] === 'subscription_pending' ? ('SUB-' . (int)($r['subscription_id'] ?? 0)) : ('P-' . (int)($r['payment_id'] ?? 0));
+        $type = $r['transaction_type'] ?: 'n/a';
+        $shop = $r['shop_name'] ?? '';
+        $user = $r['full_name'] ?? '';
+        $email = $r['email'] ?? '';
+        $plan = $type === 'subscription' ? ($r['plan_type'] ?? '') : '';
+        $vf = $type === 'subscription' ? ($r['valid_from'] ?? '') : '';
+        $vt = $type === 'subscription' ? ($r['valid_to'] ?? '') : '';
+        $gross = number_format((float)($r['amount'] ?? 0), 2, '.', '');
+        $tax = number_format((float)($r['tax_amount'] ?? 0), 2, '.', '');
+        $status = $r['payment_status'] ?? '';
+        $method = $r['payment_method'] ?? '';
+        $paidAt = $r['paid_at'] ?? '';
+        $createdAt = $r['created_at'] ?? '';
+        fputcsv($out, [$id, $type, $shop, $user, $email, $plan, $vf, $vt, $gross, $tax, $status, $method, $paidAt, $createdAt]);
+    }
+    fclose($out);
+    exit;
+}
+
+// ------------------------------------------------------------------
+// Export handler (Excel .xls via HTML) with styling and alignment
+// ------------------------------------------------------------------
+if (isset($_GET['export']) && in_array(strtolower($_GET['export']), ['xls', 'excel'], true)) {
+    $filename = 'payments_export_' . date('Ymd_His') . '.xls';
+    header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
+    header('Content-Disposition: attachment; filename=' . $filename);
+    // UTF-8 BOM for Excel
+    echo "\xEF\xBB\xBF";
+
+    // Small helper for safe text
+    $h = function ($v) {
+        return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+    };
+
+    // Build filter summary
+    $filterSummary = [
+        $search !== '' ? ("Search: '" . $search . "'") : null,
+        $typeFilter !== '' ? ("Type: " . $typeFilter) : null,
+        $statusFilter !== '' ? ("Status: " . $statusFilter) : null,
+    ];
+    $filterSummary = array_values(array_filter($filterSummary));
+
+    echo '<html><head><meta charset="UTF-8">';
+    echo '<style>
+        body{font-family:Arial,Helvetica,sans-serif; font-size:12px;}
+        table{border-collapse:collapse;}
+        th,td{border:1px solid #dee2e6; padding:6px; vertical-align:middle;}
+        th{background:#0d6efd; color:#fff; text-align:center; font-weight:bold;}
+        .text-right{text-align:right;}
+        .text-center{text-align:center;}
+        .text-muted{color:#6c757d;}
+        .nowrap{white-space:nowrap;}
+        .status-completed{background:#d1e7dd; color:#0f5132;}
+        .status-pending{background:#fff3cd; color:#664d03;}
+        .status-failed{background:#f8d7da; color:#842029;}
+        .header{margin-bottom:10px;}
+        .header h1{font-size:16px; margin:0 0 4px 0;}
+        .header .meta{color:#6c757d; font-size:11px;}
+    </style></head><body>';
+
+    echo '<div class="header">';
+    echo '<h1>Payments & Subscriptions Export</h1>';
+    echo '<div class="meta">Generated: ' . $h(date('Y-m-d H:i:s')) . '</div>';
+    if ($filterSummary) {
+        echo '<div class="meta">' . $h(implode(' • ', $filterSummary)) . '</div>';
+    }
+    echo '</div>';
+
+    echo '<table>'; // Column widths
+    echo '<colgroup>
+        <col style="width:90px;">
+        <col style="width:90px;">
+        <col style="width:220px;">
+        <col style="width:180px;">
+        <col style="width:220px;">
+        <col style="width:100px;">
+        <col style="width:110px;">
+        <col style="width:110px;">
+        <col style="width:110px;">
+        <col style="width:110px;">
+        <col style="width:120px;">
+        <col style="width:120px;">
+        <col style="width:135px;">
+        <col style="width:135px;">
+    </colgroup>';
+    echo '<thead><tr>
+        <th>ID</th>
+        <th>Type</th>
+        <th>Shop</th>
+        <th>User</th>
+        <th>Email</th>
+        <th>Plan</th>
+        <th>Valid From</th>
+        <th>Valid To</th>
+        <th>Gross</th>
+        <th>Tax</th>
+        <th>Status</th>
+        <th>Method</th>
+        <th>Paid At</th>
+        <th>Created At</th>
+    </tr></thead><tbody>';
+
+    foreach ($allRows as $r) {
+        $isSub = ($r['transaction_type'] === 'subscription');
+        $id = ($r['row_kind'] ?? '') === 'subscription_pending' ? ('SUB-' . (int)($r['subscription_id'] ?? 0)) : ('P-' . (int)($r['payment_id'] ?? 0));
+        $status = $r['payment_status'] ?? '';
+        $statusClass = 'status-' . strtolower(preg_replace('/[^a-zA-Z]+/', '', $status));
+        $grossVal = is_numeric($r['amount'] ?? null) ? number_format((float)$r['amount'], 2, '.', '') : '';
+        $taxVal = is_numeric($r['tax_amount'] ?? null) ? number_format((float)$r['tax_amount'], 2, '.', '') : '';
+        $vf = $isSub ? ($r['valid_from'] ?? '') : '';
+        $vt = $isSub ? ($r['valid_to'] ?? '') : '';
+        $paidAt = $r['paid_at'] ?? '';
+        $createdAt = $r['created_at'] ?? '';
+
+        echo '<tr>';
+        echo '<td class="nowrap text-center">' . $h($id) . '</td>';
+        echo '<td class="text-center">' . $h($r['transaction_type'] ?: 'n/a') . '</td>';
+        echo '<td>' . $h($r['shop_name'] ?? '') . '</td>';
+        echo '<td>' . $h($r['full_name'] ?? '') . '</td>';
+        echo '<td>' . $h($r['email'] ?? '') . '</td>';
+        echo '<td class="text-center">' . $h($isSub ? ($r['plan_type'] ?? '') : '') . '</td>';
+        echo '<td class="nowrap" style="mso-number-format:\'yyyy-mm-dd\';">' . $h($vf ? substr($vf, 0, 10) : '') . '</td>';
+        echo '<td class="nowrap" style="mso-number-format:\'yyyy-mm-dd\';">' . $h($vt ? substr($vt, 0, 10) : '') . '</td>';
+        echo '<td class="text-right" style="mso-number-format:\'#,##0.00\';">' . $h($grossVal) . '</td>';
+        echo '<td class="text-right text-muted" style="mso-number-format:\'#,##0.00\';">' . $h($taxVal) . '</td>';
+        echo '<td class="' . $h($statusClass) . ' text-center">' . $h($status) . '</td>';
+        echo '<td class="text-center">' . $h($r['payment_method'] ?? '') . '</td>';
+        echo '<td class="nowrap" style="mso-number-format:\'yyyy-mm-dd hh:mm\';">' . $h($paidAt ? substr($paidAt, 0, 16) : '') . '</td>';
+        echo '<td class="nowrap" style="mso-number-format:\'yyyy-mm-dd hh:mm\';">' . $h($createdAt ? substr($createdAt, 0, 16) : '') . '</td>';
+        echo '</tr>';
+    }
+
+    echo '</tbody></table>';
+    echo '</body></html>';
+    exit;
+}
+
 include __DIR__ . '/partials/layout_start.php';
 ?>
 <main class="admin-main">
@@ -202,11 +369,21 @@ include __DIR__ . '/partials/layout_start.php';
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <div>
                 <h1 class="h4 mb-1 fw-semibold">Payments & Subscriptions</h1>
-                <div class="text-muted small">Monitor and reconcile platform revenue streams (coming soon).</div>
+                <div class="text-muted small">Monitor and reconcile platform revenue streams.</div>
             </div>
             <div class="d-flex gap-2">
-                <button class="btn btn-primary btn-sm" disabled title="Coming soon"><i class="bi bi-receipt me-1"></i> Export</button>
-                <button class="btn btn-outline-secondary btn-sm" disabled title="Coming soon">Filter</button>
+                <?php
+                // Preserve current filters for export links
+                $qs = $_GET;
+                $qsXls = $qs;
+                $qsXls['export'] = 'xls';
+                $qsCsv = $qs;
+                $qsCsv['export'] = 'csv';
+                $exportXlsHref = 'payments.php?' . http_build_query($qsXls);
+                $exportCsvHref = 'payments.php?' . http_build_query($qsCsv);
+                ?>
+                <a class="btn btn-primary btn-sm" href="<?= e($exportXlsHref) ?>" title="Export Excel (.xls)"><i class="bi bi-receipt me-1"></i> Export</a>
+                <a class="btn btn-outline-secondary btn-sm" href="<?= e($exportCsvHref) ?>" title="Export CSV"><i class="bi bi-filetype-csv me-1"></i> CSV</a>
             </div>
         </div>
         <?php if ($flash['error'] || $flash['success']): ?>

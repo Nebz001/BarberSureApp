@@ -21,7 +21,9 @@ $shop_phone   = $_POST['shop_phone'] ?? '';
 $services_raw = $_POST['services'] ?? '';
 $open_time    = $_POST['open_time'] ?? '';
 $close_time   = $_POST['close_time'] ?? '';
-// Removed latitude/longitude feature (maps integration rolled back)
+// Optional coordinates for owner registration (Leaflet map)
+$latitude     = $_POST['latitude'] ?? '';
+$longitude    = $_POST['longitude'] ?? '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verify_csrf($_POST['csrf'] ?? '')) {
@@ -40,6 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $services_raw = trim($services_raw);
     $open_time = trim($open_time);
     $close_time = trim($close_time);
+    $latitude = trim((string)$latitude);
+    $longitude = trim((string)$longitude);
 
     if ($full_name === '' || $email === '' || $password === '' || $phone === '') {
         $errors[] = "Full name, email, phone and password are required.";
@@ -74,8 +78,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Optional shop contact number validation (same format policy as customer phone)
         if ($shop_phone !== '') {
             $shopPhoneDigits = preg_replace('/\D/', '', $shop_phone);
-            if (!preg_match('/^639\d{9}$/', $shopPhoneDigits)) {
+            // If it's just the '+63 ' placeholder (digits '63'), treat as empty
+            if ($shopPhoneDigits === '' || $shopPhoneDigits === '63') {
+                $shop_phone = '';
+            } elseif (!preg_match('/^639\d{9}$/', $shopPhoneDigits)) {
                 $errors[] = "Shop contact number must be exactly 10 digits after +63 (starting with 9).";
+            }
+        }
+        // Optional coordinates validation
+        if ($latitude !== '' || $longitude !== '') {
+            if ($latitude === '' || $longitude === '') {
+                $errors[] = "Both latitude and longitude must be provided, or leave both empty.";
+            } else {
+                $latF = (float)$latitude;
+                $lngF = (float)$longitude;
+                if ($latF < -90 || $latF > 90) {
+                    $errors[] = "Latitude out of range.";
+                }
+                if ($lngF < -180 || $lngF > 180) {
+                    $errors[] = "Longitude out of range.";
+                }
+                // Normalize precision
+                $latitude = number_format($latF, 6, '.', '');
+                $longitude = number_format($lngF, 6, '.', '');
             }
         }
     }
@@ -98,6 +123,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'services'    => $services_raw ?? '',
             'open_time'   => $open_time ?? '',
             'close_time'  => $close_time ?? '',
+            'shop_phone'  => $shop_phone ?? '',
+            'latitude'    => ($latitude !== '' ? $latitude : ''),
+            'longitude'   => ($longitude !== '' ? $longitude : ''),
             'code'        => $code,
             'created_at'  => time()
         ];
@@ -124,6 +152,8 @@ $selectedRole = $role ?? 'customer';
     <link rel="stylesheet" href="assets/css/register.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS for owner map (optional) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 </head>
 
 <body class="auth">
@@ -304,7 +334,20 @@ $selectedRole = $role ?? 'customer';
                     <textarea name="shop_address" rows="3" placeholder="Street / Brgy / Landmark" <?= $selectedRole === 'owner' ? 'required' : '' ?>><?= e($shop_address) ?></textarea>
                 </label>
                 <div class="address-hint" style="margin:.15rem 0 .2rem;font-size:.52rem;color:#77808a;letter-spacing:.05em;">Example: Purok 2, Brgy. San Isidro, near public market</div>
-                <!-- Map & coordinate inputs removed: relying on textual address and city only -->
+                <div class="map-section">
+                    <div class="map-header">
+                        <div class="title">Pin Location (optional)</div>
+                        <div class="map-tools">
+                            <button type="button" class="secondary-btn" id="regGeoBtn" style="padding:.25rem .5rem;font-size:.6rem;">Use my location</button>
+                            <span id="regCoords" class="map-coords">Lat/Lng: <?= ($latitude !== '' && $longitude !== '') ? e(number_format((float)$latitude, 6) . ', ' . number_format((float)$longitude, 6)) : '—' ?></span>
+                            <span id="regAddrStatus" class="map-status" aria-live="polite"></span>
+                        </div>
+                    </div>
+                    <div id="regShopMap" class="map-canvas"></div>
+                    <input type="hidden" name="latitude" id="regLatitude" value="<?= e($latitude) ?>">
+                    <input type="hidden" name="longitude" id="regLongitude" value="<?= e($longitude) ?>">
+                    <div class="field-hint" style="margin-top:.35rem;">Drag the pin or click the map to set your shop location. This helps customers find you.</div>
+                </div>
                 <label class="services-field" style="margin-top:.6rem;display:flex;flex-direction:column;gap:.45rem;">Services Offered (comma or newline separated)
                     <textarea name="services" rows="5" placeholder="Haircut, Beard Trim, Shave, ..." style="width:100%;resize:vertical;"><?= e($services_raw) ?></textarea>
                 </label>
@@ -329,7 +372,44 @@ $selectedRole = $role ?? 'customer';
     </main>
 
     <script src="assets/js/auth.js"></script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script>
+        // Minimal toast creator using existing container/styles
+        (function() {
+            const container = document.querySelector('.toast-container');
+
+            function dismiss(t) {
+                if (!t) return;
+                t.style.transition = 'opacity .3s,transform .3s';
+                t.style.opacity = '0';
+                t.style.transform = 'translateX(10px)';
+                setTimeout(() => t.remove(), 320);
+            }
+            window.pushToast = function(kind, title, msg, ms) {
+                if (!container) return;
+                const el = document.createElement('div');
+                el.className = 'toast ' + (kind === 'error' ? 'toast-error' : (kind === 'success' ? 'toast-success' : ''));
+                el.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+                el.innerHTML = `
+                    <div class="toast-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 6 9 17l-5-5" />
+                        </svg>
+                    </div>
+                    <div class="toast-body">
+                        <strong>${title||''}</strong>
+                        ${msg?`<div style="margin-top:.15rem;font-size:.8em;opacity:.9;">${msg}</div>`:''}
+                    </div>
+                    <button class="toast-close" aria-label="Close notification">&times;</button>
+                    <div class="toast-progress"></div>
+                `;
+                el.querySelector('.toast-close')?.addEventListener('click', () => dismiss(el));
+                container.appendChild(el);
+                const dur = typeof ms === 'number' ? ms : (kind === 'error' ? 4500 : 3000);
+                if (dur > 0) setTimeout(() => dismiss(el), dur);
+            }
+        })();
         // Sync registration phone with fixed +63 prefix
         (function syncRegPhone() {
             const local = document.getElementById('reg_phone_local');
@@ -400,6 +480,10 @@ $selectedRole = $role ?? 'customer';
                             el.required = true;
                         }
                     });
+                    // Resize map when section becomes visible
+                    setTimeout(() => {
+                        if (window.__regMap && window.__regMap.invalidateSize) window.__regMap.invalidateSize();
+                    }, 200);
                 } else {
                     biz.style.display = 'none';
                     biz.querySelectorAll('input,textarea').forEach(el => {
@@ -432,7 +516,184 @@ $selectedRole = $role ?? 'customer';
             update();
         })();
 
-        // Maps integration removed.
+        // Initialize Leaflet map for owner registration (optional) with cross-browser visibility safety
+        (function initRegMap() {
+            const mapEl = document.getElementById('regShopMap');
+            if (!mapEl) return;
+            const latEl = document.getElementById('regLatitude');
+            const lngEl = document.getElementById('regLongitude');
+            const labelEl = document.getElementById('regCoords');
+            const geoBtn = document.getElementById('regGeoBtn');
+            const addrTextarea = document.querySelector('textarea[name="shop_address"]');
+            const statusEl = document.getElementById('regAddrStatus');
+            const ownerSection = document.getElementById('ownerBizFields');
+
+            let map = null;
+            let marker = null;
+
+            function isVisible(el) {
+                return !!el && el.offsetParent !== null && getComputedStyle(el).display !== 'none' && getComputedStyle(el).visibility !== 'hidden';
+            }
+
+            function createMapIfNeeded() {
+                if (map) {
+                    // Already created; ensure size is correct
+                    setTimeout(() => map.invalidateSize(), 50);
+                    return;
+                }
+                const DEFAULT_CENTER = [13.9400, 121.1600]; // Lipa, Batangas approx
+                const hasValues = (latEl && latEl.value) && (lngEl && lngEl.value);
+                const start = hasValues ? [parseFloat(latEl.value), parseFloat(lngEl.value)] : DEFAULT_CENTER;
+
+                map = L.map(mapEl).setView(start, hasValues ? 15 : 11);
+                window.__regMap = map;
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
+
+                marker = L.marker(start, {
+                    draggable: true
+                }).addTo(map);
+
+                if (hasValues && labelEl) {
+                    labelEl.textContent = 'Lat/Lng: ' + parseFloat(latEl.value).toFixed(6) + ', ' + parseFloat(lngEl.value).toFixed(6);
+                }
+
+                marker.on('dragend', () => updateInputs(marker.getLatLng()));
+                map.on('click', (e) => {
+                    marker.setLatLng(e.latlng);
+                    updateInputs(e.latlng);
+                });
+
+                if (geoBtn) {
+                    geoBtn.addEventListener('click', () => {
+                        if (!navigator.geolocation) return alert('Geolocation not supported by your browser.');
+                        geoBtn.disabled = true;
+                        geoBtn.textContent = 'Locating…';
+                        navigator.geolocation.getCurrentPosition((pos) => {
+                            const ll = {
+                                lat: pos.coords.latitude,
+                                lng: pos.coords.longitude
+                            };
+                            map.setView(ll, 16);
+                            marker.setLatLng(ll);
+                            updateInputs(ll);
+                            geoBtn.disabled = false;
+                            geoBtn.textContent = 'Use my location';
+                            pushToast('success', 'Location set', 'Pin moved to your current location.', 2500);
+                        }, (err) => {
+                            alert('Unable to retrieve location: ' + (err && err.message ? err.message : 'Unknown error'));
+                            geoBtn.disabled = false;
+                            geoBtn.textContent = 'Use my location';
+                            pushToast('error', 'Location error', (err && err.message) ? err.message : 'Unable to retrieve your location.', 4500);
+                        }, {
+                            enableHighAccuracy: true,
+                            timeout: 8000,
+                            maximumAge: 0
+                        });
+                    });
+                }
+
+                // No manual refresh button; auto fetch is sufficient
+
+                // Invalidate shortly after to ensure proper draw on some browsers (e.g., Opera)
+                setTimeout(() => map.invalidateSize(), 200);
+                window.addEventListener('resize', () => {
+                    if (map) map.invalidateSize();
+                });
+            }
+
+            let reverseTimer = null;
+
+            function updateInputs(latlng) {
+                if (latEl) latEl.value = latlng.lat.toFixed(6);
+                if (lngEl) lngEl.value = latlng.lng.toFixed(6);
+                if (labelEl) labelEl.textContent = 'Lat/Lng: ' + latlng.lat.toFixed(6) + ', ' + latlng.lng.toFixed(6);
+                if (reverseTimer) clearTimeout(reverseTimer);
+                reverseTimer = setTimeout(() => reverseGeocode(latlng.lat, latlng.lng), 450);
+            }
+
+            function setStatus(msg) {
+                if (statusEl) statusEl.textContent = msg || '';
+            }
+
+            async function reverseGeocode(lat, lng, opts = {}) {
+                if (!addrTextarea) return;
+                const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&addressdetails=1&zoom=18&accept-language=en-PH`;
+                try {
+                    setStatus('Fetching address…');
+                    let lastErr = null;
+                    for (let attempt = 1; attempt <= 2; attempt++) {
+                        try {
+                            const res = await fetch(url, {
+                                headers: {
+                                    'Accept': 'application/json'
+                                }
+                            });
+                            if (res.status === 429) {
+                                lastErr = new Error('Rate limited');
+                                await new Promise(r => setTimeout(r, 1000));
+                                continue;
+                            }
+                            if (!res.ok) throw new Error('Reverse geocoding failed');
+                            const data = await res.json();
+                            const text = buildAddressText(data);
+                            if (text) addrTextarea.value = text;
+                            setStatus('');
+                            return;
+                        } catch (e) {
+                            lastErr = e;
+                            if (attempt === 1) await new Promise(r => setTimeout(r, 400));
+                        }
+                    }
+                    setStatus("Couldn't fetch address. You can type it.");
+                    pushToast('error', "Couldn't fetch address", 'Network is busy or rate-limited. You can type the address.', 4500);
+                } catch (_) {
+                    setStatus('');
+                } finally {
+                    // no-op
+                }
+            }
+
+            function buildAddressText(data) {
+                if (!data) return '';
+                const a = data.address || {};
+                const parts = [];
+                const hn = a.house_number || '';
+                const road = a.road || a.residential || a.path || a.pedestrian || a.footway || '';
+                const street = (hn && road) ? `${hn} ${road}` : (road || hn);
+                if (street) parts.push(street);
+                const brgy = a.suburb || a.neighbourhood || a.neighborhood || a.village || a.quarter || a.hamlet || '';
+                if (brgy) parts.push(`Brgy. ${brgy}`);
+                const landmark = data.name || a.public_building || a.school || a.hospital || a.college || a.university || a.mall || a.shop || '';
+                if (landmark && (!street || !street.toLowerCase().includes(String(landmark).toLowerCase()))) {
+                    parts.push(`Near ${landmark}`);
+                }
+                let text = parts.filter(Boolean).join('\n');
+                if (!text && data.display_name) text = data.display_name;
+                if (!text) {
+                    text = `Lat ${Number(latEl?.value || 0).toFixed(6)}, Lng ${Number(lngEl?.value || 0).toFixed(6)}`;
+                    // Toast once on coordinate-only fallback
+                    pushToast('error', 'Address not precise', 'Using coordinates only. You may type the address.', 4000);
+                }
+                return text;
+            }
+
+            // Create map immediately only if the Owner section is currently visible
+            if (isVisible(ownerSection)) {
+                createMapIfNeeded();
+            }
+
+            // Also hook into role toggle to build the map at the moment it becomes visible
+            const roleRadios = document.querySelectorAll('input[name="role"]');
+            roleRadios.forEach(r => r.addEventListener('change', () => {
+                const val = document.querySelector('input[name="role"]:checked')?.value;
+                if (val === 'owner') {
+                    setTimeout(() => createMapIfNeeded(), 100);
+                }
+            }));
+        })();
         (function timeValidation() {
             const openEl = document.querySelector('input[name="open_time"]');
             const closeEl = document.querySelector('input[name="close_time"]');

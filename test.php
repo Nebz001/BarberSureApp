@@ -13,6 +13,7 @@ $emails = [
     'cust4@example.com',
     'cust5@example.com',
     'cust6@example.com',
+    'tanbenedict48@gmail.com'
 ];
 
 $newPassword = 'pass1234';
