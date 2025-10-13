@@ -290,7 +290,7 @@ function status_chip_class($st)
                                 <div style="font-size:.8rem;font-weight:600;letter-spacing:.3px;" title="<?= e($sg['shop_name']) ?>"><?= e($sg['shop_name']) ?></div>
                                 <div class="small-muted" style="font-size:.65rem;"><?= e($sg['city'] ?: 'Batangas') ?></div>
                                 <div style="font-size:.65rem;margin-top:.3rem;">⭐ <?= number_format((float)$sg['avg_rating'], 1) ?> <span class="small-muted">(<?= (int)$sg['reviews'] ?>)</span></div>
-                                <a href="../shop_details.php?id=<?= (int)$sg['shop_id'] ?>" class="btn" style="margin-top:.4rem; font-size:.65rem; padding:.45rem .6rem;"><i class="bi bi-eye" aria-hidden="true"></i> <span>View</span></a>
+                                <a href="shop_details.php?id=<?= (int)$sg['shop_id'] ?>" class="btn" style="margin-top:.4rem; font-size:.65rem; padding:.45rem .6rem;"><i class="bi bi-eye" aria-hidden="true"></i> <span>View</span></a>
                             </div>
                         <?php endforeach; ?>
                     </div>

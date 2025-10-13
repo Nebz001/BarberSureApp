@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $upd->execute([$status, $resNotes !== '' ? $resNotes : null, $disputeId]);
                 $flash['success'] = 'Dispute updated.';
             } elseif ($act === 'scan_renewals') {
-                // Find paid subscriptions expiring in next 5 days that have auto_renew and no generated child yet.
+                // Retained for compatibility; keep existing behavior
                 $pending = $pdo->query("SELECT subscription_id, shop_id, plan_type, annual_fee, tax_rate, valid_to FROM Shop_Subscriptions WHERE payment_status='paid' AND auto_renew=1 AND valid_to BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 5 DAY) AND renewal_generated_at IS NULL LIMIT 50")->fetchAll(PDO::FETCH_ASSOC);
                 $generated = 0;
                 if ($pending) {
@@ -75,6 +75,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 $flash['success'] = $generated . ' renewal(s) generated.';
+            } elseif ($act === 'create_offline_subscription') {
+                // Create a new offline subscription entry (pending payment)
+                $shopId = (int)($_POST['shop_id'] ?? 0);
+                $plan = $_POST['plan_type'] ?? 'annual';
+                $annualFee = (float)($_POST['amount'] ?? 0);
+                $taxRate = (float)($_POST['tax_rate'] ?? 0);
+                $validFrom = trim($_POST['valid_from'] ?? '');
+                $autoRenew = isset($_POST['auto_renew']) ? 1 : 0;
+
+                if ($shopId <= 0) throw new Exception('Select a shop');
+                if (!in_array($plan, ['monthly', 'annual'], true)) throw new Exception('Invalid plan');
+                if ($annualFee <= 0) throw new Exception('Enter a valid amount');
+                if ($taxRate < 0) throw new Exception('Invalid tax rate');
+                if ($validFrom === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $validFrom)) throw new Exception('Choose a valid start date');
+
+                $vf = $validFrom;
+                $vt = $plan === 'monthly'
+                    ? date('Y-m-d', strtotime($vf . ' +1 month -1 day'))
+                    : date('Y-m-d', strtotime($vf . ' +1 year -1 day'));
+
+                $ins = $pdo->prepare("INSERT INTO Shop_Subscriptions (shop_id, plan_type, annual_fee, tax_rate, payment_status, valid_from, valid_to, auto_renew) VALUES (?,?,?,?, 'pending', ?, ?, ?)");
+                $ins->execute([$shopId, $plan, $annualFee, $taxRate, $vf, $vt, $autoRenew]);
+                $flash['success'] = 'Offline subscription created.';
             }
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
@@ -193,7 +216,8 @@ $transactions = array_slice($allRows, $offset, $perPage);
 // Fetch small dashboards / data slices (not paginated, independent of filters)
 $offlinePending = $pdo->query("SELECT s.subscription_id, b.shop_name, s.plan_type, s.annual_fee, s.tax_rate, s.valid_from, s.valid_to FROM Shop_Subscriptions s JOIN Barbershops b ON s.shop_id=b.shop_id WHERE s.payment_status='pending' ORDER BY s.created_at DESC LIMIT 25")->fetchAll(PDO::FETCH_ASSOC);
 $openDisputes = $pdo->query("SELECT d.dispute_id, d.payment_id, d.reason, d.status, p.amount, p.tax_amount, p.transaction_type, p.payment_status FROM Payment_Disputes d JOIN Payments p ON d.payment_id=p.payment_id WHERE d.status IN ('open','in_review') ORDER BY d.created_at DESC LIMIT 25")->fetchAll(PDO::FETCH_ASSOC);
-$taxSummary = $pdo->query("SELECT DATE_FORMAT(p.paid_at,'%Y-%m') ym, SUM(p.amount) gross, SUM(p.tax_amount) tax FROM Payments p WHERE p.payment_status='completed' GROUP BY ym ORDER BY ym DESC LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
+// Shops list for creating offline subscription
+$shopsList = $pdo->query("SELECT shop_id, shop_name FROM Barbershops ORDER BY shop_name ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 // ------------------------------------------------------------------
 // Export handler (CSV) - uses current filters; exports all filtered rows
@@ -510,15 +534,16 @@ include __DIR__ . '/partials/layout_start.php';
                             $qs = $_GET;
                             unset($qs['page']);
                             $base = 'payments.php' . ($qs ? ('?' . http_build_query($qs)) : '');
+                            $sep = (strpos($base, '?') !== false) ? '&' : '?';
                             ?>
-                            <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>"><a class="page-link" href="<?= $page <= 1 ? '#' : e($base . '&page=' . ($page - 1)) ?>">«</a></li>
+                            <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>"><a class="page-link" href="<?= $page <= 1 ? '#' : e($base . $sep . 'page=' . ($page - 1)) ?>">«</a></li>
                             <?php for ($i = 1; $i <= $totalPages; $i++): if ($i > 6 && $i < $totalPages) {
                                     if ($i == 7) echo '<li class=\'page-item disabled\'><span class=\'page-link\'>…</span></li>';
                                     continue;
                                 } ?>
-                                <li class="page-item <?= $i === $page ? 'active' : '' ?>"><a class="page-link" href="<?= e($base . '&page=' . $i) ?>"><?= $i ?></a></li>
+                                <li class="page-item <?= $i === $page ? 'active' : '' ?>"><a class="page-link" href="<?= e($base . $sep . 'page=' . $i) ?>"><?= $i ?></a></li>
                             <?php endfor; ?>
-                            <li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>"><a class="page-link" href="<?= $page >= $totalPages ? '#' : e($base . '&page=' . ($page + 1)) ?>">»</a></li>
+                            <li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>"><a class="page-link" href="<?= $page >= $totalPages ? '#' : e($base . $sep . 'page=' . ($page + 1)) ?>">»</a></li>
                         </ul>
                     </nav>
                 </div>
@@ -656,45 +681,79 @@ include __DIR__ . '/partials/layout_start.php';
                     </div>
                 </div>
             </div>
-            <!-- Tax Summary & Renewals -->
+            <!-- Add Offline Subscription -->
             <div class="col-xl-3">
                 <div class="card mb-4 h-100">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">Tax Summary (Last 6 mo)</h6>
-                        <form method="post" class="m-0">
-                            <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
-                            <input type="hidden" name="action" value="scan_renewals">
-                            <button class="btn btn-sm btn-outline-secondary" title="Generate renewal subscriptions"><i class="bi bi-arrow-repeat"></i></button>
-                        </form>
+                        <h6 class="mb-0">Add Offline Subscription</h6>
                     </div>
                     <div class="card-body small">
-                        <?php if (!$taxSummary): ?>
-                            <p class="text-muted mb-0">No payments yet.</p>
-                        <?php else: ?>
-                            <table class="table table-sm mb-2">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Period</th>
-                                        <th class="text-end">Gross</th>
-                                        <th class="text-end">Tax</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($taxSummary as $r): ?>
-                                        <tr>
-                                            <td><?= e($r['ym']) ?></td>
-                                            <td class="text-end">₱<?= number_format($r['gross'], 2) ?></td>
-                                            <td class="text-end text-muted">₱<?= number_format($r['tax'], 2) ?></td>
-                                        </tr>
+                        <form method="post" class="row g-2">
+                            <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
+                            <input type="hidden" name="action" value="create_offline_subscription">
+                            <div class="col-12">
+                                <label class="form-label mb-1 small">Shop</label>
+                                <select name="shop_id" class="form-select form-select-sm" required>
+                                    <option value="">Select shop…</option>
+                                    <?php foreach ($shopsList as $s): ?>
+                                        <option value="<?= (int)$s['shop_id'] ?>"><?= e($s['shop_name']) ?></option>
                                     <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                            <p class="text-muted mb-0" style="font-size:.6rem;">Renewal scan button attempts to pre-create next-period subscriptions (pending state).</p>
-                        <?php endif; ?>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label mb-1 small">Plan</label>
+                                <select name="plan_type" id="planSelect" class="form-select form-select-sm">
+                                    <option value="monthly">Monthly</option>
+                                    <option value="annual" selected>Annual</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label mb-1 small">Start Date</label>
+                                <input type="date" name="valid_from" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label mb-1 small">Amount</label>
+                                <input type="number" step="0.01" min="0" name="amount" id="amountInput" class="form-control form-control-sm" placeholder="0.00" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label mb-1 small">Tax Rate (%)</label>
+                                <input type="number" step="0.01" min="0" name="tax_rate" class="form-control form-control-sm" placeholder="0" value="0">
+                            </div>
+                            <div class="col-12 form-check mt-1">
+                                <input class="form-check-input" type="checkbox" name="auto_renew" id="autoRenewChk" checked>
+                                <label class="form-check-label" for="autoRenewChk" style="font-size:.85rem;">Enable auto-renew</label>
+                            </div>
+                            <div class="col-12 text-end">
+                                <button class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Create</button>
+                            </div>
+                            <div class="col-12">
+                                <p class="text-muted mb-0" style="font-size:.65rem;">Creates a pending subscription entry for the selected shop. You can confirm payment later from the Pending Offline Subscriptions list.</p>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </main>
+<script>
+    // Auto-fill amount based on plan selection
+    document.addEventListener('DOMContentLoaded', function() {
+        var planEl = document.getElementById('planSelect');
+        var amountEl = document.getElementById('amountInput');
+        if (!planEl || !amountEl) return;
+        var applyDefault = function() {
+            var plan = planEl.value;
+            if (plan === 'monthly') {
+                amountEl.value = '399';
+            } else {
+                amountEl.value = '3999';
+            }
+        };
+        // Set default on load based on selected plan
+        applyDefault();
+        // Update when plan changes
+        planEl.addEventListener('change', applyDefault);
+    });
+</script>
 <?php include __DIR__ . '/partials/footer.php'; ?>

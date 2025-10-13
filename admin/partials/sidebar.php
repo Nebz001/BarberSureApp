@@ -19,7 +19,6 @@
                     ['reports.php', 'bi-file-earmark-text', 'Reports'],
                     ['notifications.php', 'bi-bell', 'Notifications'],
                     ['settings.php', 'bi-gear', 'Settings'],
-                    ['logs.php', 'bi-clipboard-data', 'Logs'],
                 ];
                 $current = basename($_SERVER['PHP_SELF']);
                 foreach ($NAV as $item) {
