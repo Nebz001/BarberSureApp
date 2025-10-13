@@ -95,11 +95,16 @@
                       minute: "2-digit",
                   })
                 : "";
+            // For inquiries, prefer showing customer_name or last_name instead of 'pre'
+            const titleLabel =
+                kind === "inquiry"
+                    ? c.customer_name || c.last_name || "Inquiry"
+                    : c.type || kind;
             const div = document.createElement("div");
             div.className =
                 "msg-item" + (c.channel === activeChannel ? " active" : "");
             div.innerHTML = `<div class='mi-top'><span>${esc(
-                c.type || kind
+                titleLabel
             )}</span><span>${esc(when)}</span></div><div class='mi-msg'>${esc(
                 c.last_msg || ""
             )}</div>`;

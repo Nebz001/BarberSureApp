@@ -106,7 +106,7 @@ $maxPage = $total ? (int)ceil($total / $perPage) : 1;
 if ($page > $maxPage) $page = $maxPage;
 $offset = ($page - 1) * $perPage;
 
-$sql = "SELECT a.appointment_id,a.appointment_date,a.status,a.payment_option,a.notes,a.is_paid,b.shop_name,b.city,s.service_name,s.duration_minutes,s.price FROM Appointments a JOIN Barbershops b ON a.shop_id=b.shop_id JOIN Services s ON a.service_id=s.service_id WHERE $whereSql ORDER BY $order LIMIT :limit OFFSET :offset";
+$sql = "SELECT a.appointment_id,a.appointment_date,a.status,a.payment_option,a.notes,a.is_paid,b.shop_name,b.city,s.service_name,s.duration_minutes,s.price,r.rating AS review_rating,r.comment AS review_comment FROM Appointments a JOIN Barbershops b ON a.shop_id=b.shop_id JOIN Services s ON a.service_id=s.service_id LEFT JOIN Reviews r ON r.appointment_id=a.appointment_id AND r.customer_id=:uid WHERE $whereSql ORDER BY $order LIMIT :limit OFFSET :offset";
 $stmt = $pdo->prepare($sql);
 foreach ($params as $k => $v) $stmt->bindValue($k, $v);
 $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
@@ -131,6 +131,7 @@ function page_link_hist($p)
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="../assets/css/customer.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <style>
         .history-header {
             display: flex;
@@ -183,7 +184,7 @@ function page_link_hist($p)
     <main class="dashboard-main">
         <section class="card" style="padding:1.25rem 1.35rem 1.5rem;margin-bottom:1.55rem;">
             <div class="history-header" style="margin-bottom:.95rem;">
-                <h1>Your Booking History</h1>
+                <h1><i class="bi bi-journal-text" aria-hidden="true"></i> <span>Your Booking History</span></h1>
                 <p style="font-size:.78rem;color:var(--c-text-soft);max-width:760px;line-height:1.55;margin:.35rem 0 0;">Review past and upcoming appointments. Filter by status, timeframe, or search by shop and service name.</p>
             </div>
             <form method="get" class="filters" action="bookings_history.php" autocomplete="off">
@@ -207,9 +208,9 @@ function page_link_hist($p)
                     <option value="status" <?= $sort === 'status' ? 'selected' : '' ?>>Status</option>
                 </select>
                 <div style="display:flex;gap:.5rem;">
-                    <button class="btn btn-primary btn-small" type="submit">Apply</button>
-                    <a href="bookings_history.php" class="btn btn-small" style="background:var(--c-surface);">Reset</a>
-                    <a href="<?= e(page_link_hist(1) . (strpos(page_link_hist(1), '?') !== false ? '&' : '?')) ?>export=1" class="btn btn-small" style="background:var(--c-surface);">Export CSV</a>
+                    <button class="btn btn-primary btn-small" type="submit"><i class="bi bi-funnel" aria-hidden="true"></i> <span>Apply</span></button>
+                    <a href="bookings_history.php" class="btn btn-small" style="background:var(--c-surface);"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> <span>Reset</span></a>
+                    <a href="<?= e(page_link_hist(1) . (strpos(page_link_hist(1), '?') !== false ? '&' : '?')) ?>export=1" class="btn btn-small" style="background:var(--c-surface);"><i class="bi bi-filetype-csv" aria-hidden="true"></i> <span>Export CSV</span></a>
                 </div>
             </form>
             <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.8rem;align-items:center;font-size:.55rem;letter-spacing:.5px;color:var(--c-text-soft);">
@@ -262,6 +263,13 @@ function page_link_hist($p)
                                         <button type="submit" class="btn-cancel">Cancel</button>
                                     </form>
                                 <?php endif; ?>
+                                <?php if ($r['status'] === 'completed' && (int)($r['review_rating'] ?? 0) === 0): ?>
+                                    <button type="button" class="btn rate-btn" data-appt="<?= (int)$r['appointment_id'] ?>" data-shop="<?= e($r['shop_name']) ?>" style="font-size:.55rem;padding:.45rem .6rem;background:#0ea5e9;color:#fff;border-color:#0ea5e9;">
+                                        <i class="bi bi-star"></i> Rate
+                                    </button>
+                                <?php elseif ((int)($r['review_rating'] ?? 0) > 0): ?>
+                                    <span class="badge-status" title="Your rating" style="background:#fbbf24;color:#111;">★ <?= (int)$r['review_rating'] ?>/5</span>
+                                <?php endif; ?>
                             </div>
                             <div id="det-<?= (int)$r['appointment_id'] ?>" class="hist-details">
                                 <table>
@@ -299,7 +307,7 @@ function page_link_hist($p)
                                     </tr>
                                 </table>
                             </div>
-                            <div class="booking-chat-box" id="chat-box-<?= (int)$r['appointment_id'] ?>" data-loaded="0" style="display:none;margin-top:.5rem;border:1px solid var(--c-border);background:var(--c-surface);border-radius:var(--radius-sm);padding:.55rem .6rem;">
+                            <div class="booking-chat-box" id="chat-box-<?= (int)$r['appointment_id'] ?>" data-loaded="0" style="display:none;margin-top:.5rem;border:1px solid var(--c-border);background:var(--c-surface);border-radius:var(--radius-sm);padding:.55rem .9rem;">
                                 <div class="chat-lines" style="display:flex;flex-direction:column;gap:.45rem;max-height:200px;overflow-y:auto;font-size:.58rem;line-height:1.4;"></div>
                                 <form class="chat-send" style="margin-top:.45rem;display:flex;gap:.4rem;align-items:flex-start;">
                                     <textarea rows="2" placeholder="Message..." style="flex:1;background:var(--c-bg-alt);border:1px solid var(--c-border-soft);color:var(--c-text);border-radius:var(--radius-sm);padding:.4rem .5rem;font-size:.6rem;resize:vertical;min-height:54px;max-height:120px;"></textarea>
@@ -324,6 +332,32 @@ function page_link_hist($p)
         </section>
     </main>
     <footer class="dashboard-footer">&copy; <?= date('Y') ?> BarberSure • Track your grooming.</footer>
+    <!-- Rate Modal -->
+    <div id="rateModal" class="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;z-index:1000;">
+        <div class="modal-card" role="dialog" aria-labelledby="rateTitle" style="background:var(--c-bg-alt);border:1px solid var(--c-border);border-radius:10px;min-width:320px;max-width:92vw;padding:1rem;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;">
+                <h3 id="rateTitle" style="margin:0;font-size:1rem;font-weight:700;">Rate your visit</h3>
+                <button type="button" id="rateClose" class="btn" style="background:var(--c-surface);">Close</button>
+            </div>
+            <div id="rateShop" style="font-size:.8rem;color:var(--c-text-soft);margin-bottom:.6rem;"></div>
+            <form id="rateForm" style="display:flex;flex-direction:column;gap:.6rem;">
+                <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>" />
+                <input type="hidden" name="appointment_id" value="" />
+                <div>
+                    <label style="display:block;font-size:.75rem;margin-bottom:.3rem;">Rating</label>
+                    <div id="stars" style="display:flex;gap:.35rem;font-size:1.2rem;cursor:pointer;">
+                        <span data-val="1">☆</span><span data-val="2">☆</span><span data-val="3">☆</span><span data-val="4">☆</span><span data-val="5">☆</span>
+                    </div>
+                </div>
+                <div>
+                    <label style="display:block;font-size:.75rem;margin-bottom:.3rem;">Comment (optional)</label>
+                    <textarea name="comment" rows="4" placeholder="Share your experience" style="width:100%;box-sizing:border-box;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);border-radius:8px;padding:.55rem;font-size:.78rem;"></textarea>
+                </div>
+                <div id="rateError" style="display:none;color:#ef4444;font-size:.75rem;"></div>
+                <button type="submit" class="btn btn-primary">Submit Review</button>
+            </form>
+        </div>
+    </div>
     <script>
         document.querySelectorAll('.details-toggle').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -335,6 +369,98 @@ function page_link_hist($p)
                 btn.textContent = open ? 'Details' : 'Hide';
             });
         });
+        // Rating modal logic
+        (function() {
+            const modal = document.getElementById('rateModal');
+            const closeBtn = document.getElementById('rateClose');
+            const form = document.getElementById('rateForm');
+            const stars = document.getElementById('stars');
+            const shopEl = document.getElementById('rateShop');
+            const errEl = document.getElementById('rateError');
+            let rating = 0;
+
+            function openModal(apptId, shopName) {
+                form.appointment_id.value = String(apptId);
+                form.comment.value = '';
+                rating = 0;
+                paintStars(0);
+                shopEl.textContent = shopName || '';
+                errEl.style.display = 'none';
+                errEl.textContent = '';
+                modal.style.display = 'flex';
+            }
+
+            function closeModal() {
+                modal.style.display = 'none';
+            }
+
+            function paintStars(n) {
+                Array.from(stars.children).forEach((el, i) => {
+                    el.textContent = (i < n) ? '★' : '☆';
+                });
+            }
+            stars.addEventListener('click', (e) => {
+                const t = e.target.closest('span');
+                if (!t) return;
+                rating = parseInt(t.getAttribute('data-val') || '0', 10) || 0;
+                paintStars(rating);
+            });
+            closeBtn.addEventListener('click', closeModal);
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeModal();
+            });
+            document.body.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+
+            document.querySelectorAll('.rate-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const appt = btn.getAttribute('data-appt');
+                    const shop = btn.getAttribute('data-shop');
+                    openModal(appt, `Rating for ${shop}`);
+                });
+            });
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                errEl.style.display = 'none';
+                errEl.textContent = '';
+                if (!rating || rating < 1 || rating > 5) {
+                    errEl.textContent = 'Please select a rating from 1 to 5.';
+                    errEl.style.display = 'block';
+                    return;
+                }
+                const fd = new FormData(form);
+                fd.append('rating', String(rating));
+                fetch('../api/review_submit.php', {
+                        method: 'POST',
+                        body: fd
+                    })
+                    .then(r => r.json()).then(j => {
+                        if (!j || !j.ok) {
+                            throw new Error(j && j.error ? j.error : 'Failed to submit review');
+                        }
+                        // Update the row badges/UI without full reload
+                        const apptId = form.appointment_id.value;
+                        const itemTop = document.querySelector(`.hist-item[data-appt="${CSS.escape(apptId)}"] .hist-top`);
+                        if (itemTop) {
+                            const badge = document.createElement('span');
+                            badge.className = 'badge-status';
+                            badge.style.background = '#fbbf24';
+                            badge.style.color = '#111';
+                            badge.textContent = `★ ${rating}/5`;
+                            itemTop.appendChild(badge);
+                        }
+                        const rateBtn = document.querySelector(`.hist-item[data-appt="${CSS.escape(apptId)}"] .rate-btn`);
+                        if (rateBtn) rateBtn.remove();
+                        closeModal();
+                    })
+                    .catch(err => {
+                        errEl.textContent = err.message || 'Something went wrong.';
+                        errEl.style.display = 'block';
+                    });
+            });
+        })();
     </script>
     <script src="../assets/js/booking_thread_chat.js"></script>
     <script src="../assets/js/menu-toggle.js"></script>

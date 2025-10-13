@@ -448,7 +448,7 @@ function format_appointment_time($datetime)
     <main class="owner-main">
         <!-- Hero Card for page title (consistent with other owner pages) -->
         <section class="card" style="padding:1.15rem 1.2rem 1.25rem;margin-bottom:1.4rem;display:flex;flex-direction:column;gap:.55rem;">
-            <h1 style="margin:0;font-size:1.55rem;font-weight:600;letter-spacing:.45px;">Manage Bookings</h1>
+            <h1 style="margin:0;font-size:1.55rem;font-weight:600;letter-spacing:.45px;"><i class="bi bi-calendar-check" aria-hidden="true"></i> Manage Bookings</h1>
             <p style="margin:0;font-size:.75rem;line-height:1.55;color:var(--o-text-soft);max-width:820px;">Review, filter and update customer appointments across your shops. Use the filters below to narrow results and quickly act on pending or confirmed bookings.</p>
         </section>
 
@@ -464,7 +464,7 @@ function format_appointment_time($datetime)
         <!-- Filters -->
         <section class="card" style="margin-bottom:1.4rem;display:flex;flex-direction:column;gap:.85rem;">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.75rem;">
-                <h2 style="margin:0;font-size:1.05rem;font-weight:600;letter-spacing:.4px;">Filters & Search</h2>
+                <h2 style="margin:0;font-size:1.05rem;font-weight:600;letter-spacing:.4px;"><i class="bi bi-funnel" aria-hidden="true"></i> Filters & Search</h2>
                 <span style="font-size:.55rem;letter-spacing:.5px;color:var(--o-text-soft);">Refine the appointments list</span>
             </div>
             <form method="get" action="bookings.php">
@@ -504,15 +504,15 @@ function format_appointment_time($datetime)
                     </label>
                 </div>
                 <div style="margin-top:.2rem;display:flex;gap:.55rem;flex-wrap:wrap;">
-                    <button type="submit" class="btn btn-primary">Filter</button>
-                    <a href="bookings.php" class="btn">Reset</a>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-funnel" aria-hidden="true"></i>Filter</button>
+                    <a href="bookings.php" class="btn"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>Reset</a>
                 </div>
             </form>
         </section>
 
         <section class="card" style="display:flex;flex-direction:column;gap:.95rem;">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.8rem;">
-                <h2 style="margin:0;font-size:1.05rem;font-weight:600;">Appointments <span style="font-size:.6rem;color:var(--o-text-soft);">(<?= $totalAppointments ?>)</span></h2>
+                <h2 style="margin:0;font-size:1.05rem;font-weight:600;"><i class="bi bi-people" aria-hidden="true"></i> Appointments <span style="font-size:.6rem;color:var(--o-text-soft);">(<?= $totalAppointments ?>)</span></h2>
                 <?php if ($totalAppointments > $perPage): ?>
                     <span style="font-size:.6rem;color:var(--o-text-soft);">Page <?= $page ?> of <?= $maxPage ?></span>
                 <?php endif; ?>

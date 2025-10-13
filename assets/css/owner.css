@@ -398,6 +398,35 @@ main.owner-main {
     font-size: 0.6rem;
     color: var(--o-text-soft);
 }
+
+/* Icons: color tuning for visibility and consistency */
+.btn .bi {
+    color: var(--o-accent);
+    font-size: 1em;
+    line-height: 1;
+}
+.btn.btn-primary .bi {
+    color: #fff;
+}
+.btn:hover .bi {
+    color: var(--o-accent-alt);
+}
+
+.metric-label .bi {
+    color: var(--o-accent);
+    margin-right: 0.25rem;
+    font-size: 0.9em;
+    vertical-align: -1px;
+}
+
+.card h2 .bi,
+.card h1 .bi,
+.card h3 .bi {
+    color: var(--o-accent);
+    margin-right: 0.35rem;
+    font-size: 0.95em;
+    vertical-align: -1px;
+}
 /* Appointments Specific Styles */
 .appointments-header {
     display: flex;

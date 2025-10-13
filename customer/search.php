@@ -93,6 +93,7 @@ if (!function_exists('page_link')) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="../assets/css/customer.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <style>
         .search-header {
             display: flex;
@@ -276,6 +277,42 @@ if (!function_exists('page_link')) {
             min-width: 130px;
         }
 
+        .nearby-status {
+            display: none;
+            margin: .6rem 0 -.4rem;
+            background: var(--c-bg-alt);
+            border: 1px dashed var(--c-border);
+            color: var(--c-text);
+            padding: .55rem .7rem;
+            border-radius: var(--radius-sm);
+            font-size: .75rem;
+            align-items: center;
+            justify-content: space-between;
+            gap: .6rem;
+        }
+
+        .distance-badge {
+            position: absolute;
+            top: .6rem;
+            right: .6rem;
+            background: #0ea5e9;
+            color: #fff;
+            font-size: .6rem;
+            padding: .2rem .4rem;
+            border-radius: 6px;
+            letter-spacing: .3px;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
         @media (max-width:680px) {
             .filters-wrap {
                 flex-direction: column;
@@ -318,7 +355,7 @@ if (!function_exists('page_link')) {
     <main class="dashboard-main">
         <section class="card" style="padding:1.3rem 1.4rem 1.55rem;margin-bottom:1.6rem;">
             <div class="search-header" style="margin-bottom:1rem;">
-                <h1>Find a Barbershop</h1>
+                <h1><i class="bi bi-search" aria-hidden="true"></i> <span>Find a Barbershop</span></h1>
                 <p style="font-size:.8rem;color:var(--c-text-soft);max-width:720px;line-height:1.55;">Search verified shops, compare ratings and reviews, and discover new places to book your next appointment.</p>
             </div>
             <form method="get" class="filters-wrap" action="search.php">
@@ -341,9 +378,17 @@ if (!function_exists('page_link')) {
                 <div class="filters-actions">
                     <button class="btn btn-primary btn-small" type="submit">Apply</button>
                     <a href="search.php" class="btn btn-small" style="background:var(--c-surface);">Reset</a>
+                    <button id="useLocationBtn" class="btn btn-small" type="button" title="Show nearest shops" style="background:var(--c-surface);display:flex;align-items:center;gap:.35rem;">
+                        <i class="bi bi-geo-alt"></i>
+                        <span>Use My Location</span>
+                    </button>
                 </div>
             </form>
         </section>
+        <div id="nearbyStatus" class="nearby-status" role="status" aria-live="polite">
+            <span id="nearbyMessage">Showing top 3 nearest to your location</span>
+            <button id="clearNearbyBtn" class="btn btn-small" type="button" style="background:var(--c-surface);">Clear</button>
+        </div>
         <div class="shops-grid">
             <?php if (!$shops): ?>
                 <div class="empty" style="grid-column:1/-1;">No shops found. Try adjusting your filters.</div>
@@ -360,7 +405,7 @@ if (!function_exists('page_link')) {
             endif; ?>
         </div>
         <?php if ($total > $perPage): ?>
-            <div class="pagination" aria-label="Pagination">
+            <div id="pagination" class="pagination" aria-label="Pagination">
                 <?php
                 $range = 2;
                 $start = max(1, $page - $range);
@@ -385,6 +430,165 @@ if (!function_exists('page_link')) {
     <footer class="dashboard-footer">&copy; <?= date('Y') ?> BarberSure • Find your style.</footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.js"></script>
     <script src="../assets/js/menu-toggle.js"></script>
+    <script>
+        (function() {
+            const btn = document.getElementById('useLocationBtn');
+            if (!btn) return;
+            const grid = document.querySelector('.shops-grid');
+            const pag = document.getElementById('pagination');
+            const statusBar = document.getElementById('nearbyStatus');
+            const statusMsg = document.getElementById('nearbyMessage');
+            const clearBtn = document.getElementById('clearNearbyBtn');
+
+            function escapeHtml(s) {
+                return String(s)
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;')
+                    .replaceAll('"', '&quot;')
+                    .replaceAll("'", '&#039;');
+            }
+
+            function setLoading(loading) {
+                btn.disabled = !!loading;
+                if (loading) {
+                    btn.dataset.prevText = btn.innerHTML;
+                    btn.innerHTML = '<i class="bi bi-arrow-repeat" style="animation:spin 1s linear infinite;display:inline-block;"></i> Locating…';
+                } else if (btn.dataset.prevText) {
+                    btn.innerHTML = btn.dataset.prevText;
+                    delete btn.dataset.prevText;
+                }
+            }
+
+            function showStatus(msg) {
+                statusMsg.textContent = msg;
+                statusBar.style.display = 'flex';
+            }
+
+            function hideStatus() {
+                statusBar.style.display = 'none';
+            }
+
+            function renderShops(shops) {
+                if (!Array.isArray(shops) || shops.length === 0) {
+                    grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">No nearby shops found.</div>';
+                    return;
+                }
+                const tiles = shops.map(s => {
+                    const rating = Number(s.avg_rating ?? 0).toFixed(1);
+                    const reviews = Number(s.reviews_count ?? 0);
+                    const name = escapeHtml(s.shop_name ?? '');
+                    const city = escapeHtml(s.city ?? '—');
+                    const addressRaw = s.address ? String(s.address) : '';
+                    const addressTrim = addressRaw.length > 30 ? addressRaw.slice(0, 28) + '…' : addressRaw;
+                    const address = escapeHtml(addressTrim || 'No address');
+                    const desc = escapeHtml(s.description ?? '');
+                    const verified = Number(s.is_verified ?? 0) === 1;
+                    const id = Number(s.shop_id);
+                    const dist = (typeof s.distance_km !== 'undefined' && s.distance_km !== null) ?
+                        `${(Math.round(Number(s.distance_km) * 10) / 10).toFixed(1)} km` :
+                        '';
+                    return `
+                        <div class="tile">
+                            <a class="tile-link" href="shop_details.php?id=${id}" aria-label="View ${name} details"></a>
+                            ${dist ? `<span class="distance-badge" title="Distance from you">${dist}</span>` : ''}
+                            <h3 class="tile-title">${name} ${verified ? '<span class="verify-badge">VERIFIED</span>' : ''}</h3>
+                            <div class="rating-line"><i class="bi bi-star-fill" style="color:#fbbf24;"></i><span>${rating}</span><span class="count">(${reviews})</span></div>
+                            <div class="address"><span>${city}</span><span>${address}</span></div>
+                            <p class="desc mb-none">${desc}</p>
+                        </div>`;
+                }).join('');
+                grid.innerHTML = tiles;
+            }
+
+            function doNearby(lat, lng, fallbackCity) {
+                const q = document.querySelector('input[name="q"]').value || '';
+                const city = document.querySelector('select[name="city"]').value || '';
+                const verified = document.querySelector('select[name="verified"]').value || '';
+                fetch('../api/shops_nearby.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        lat,
+                        lng,
+                        q,
+                        city,
+                        verified,
+                        fallbackCity: (fallbackCity || '')
+                    })
+                }).then(r => r.json()).then(data => {
+                    if (data && data.ok) {
+                        renderShops(data.shops || []);
+                        if (pag) pag.style.display = 'none';
+                        showStatus('Showing top 3 nearest to your location' + (fallbackCity ? ` (around ${escapeHtml(fallbackCity)})` : ''));
+                    } else {
+                        renderShops([]);
+                        if (pag) pag.style.display = 'none';
+                        showStatus('Could not fetch nearby shops.');
+                    }
+                }).catch(() => {
+                    renderShops([]);
+                    if (pag) pag.style.display = 'none';
+                    showStatus('Network error fetching nearby shops.');
+                });
+            }
+
+            btn.addEventListener('click', function() {
+                if (!('geolocation' in navigator)) {
+                    showStatus('Geolocation is not supported by your browser.');
+                    return;
+                }
+                setLoading(true);
+                const opts = {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                };
+                navigator.geolocation.getCurrentPosition(function(pos) {
+                    setLoading(false);
+                    const {
+                        latitude,
+                        longitude
+                    } = pos.coords || {};
+                    if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+                        showStatus('Could not read your location.');
+                        return;
+                    }
+                    // Try reverse geocoding city name for better fallback matching
+                    let cityHint = '';
+                    const url = `../api/reverse_geocode.php?lat=${encodeURIComponent(latitude)}&lng=${encodeURIComponent(longitude)}`;
+                    fetch(url).then(r => r.ok ? r.json() : null).then(j => {
+                        if (j && j.address) {
+                            cityHint = j.address.city || j.address.town || j.address.village || j.address.municipality || '';
+                        }
+                    }).catch(() => {}).finally(() => {
+                        doNearby(latitude, longitude, cityHint);
+                    });
+                }, function(err) {
+                    setLoading(false);
+                    if (err && (err.code === 1)) {
+                        showStatus('Permission denied to access location.');
+                    } else if (err && (err.code === 2)) {
+                        showStatus('Location unavailable.');
+                    } else if (err && (err.code === 3)) {
+                        showStatus('Location request timed out.');
+                    } else {
+                        showStatus('Unable to get your location.');
+                    }
+                }, opts);
+            });
+
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function() {
+                    // simplest: restore original server-rendered list
+                    hideStatus();
+                    location.reload();
+                });
+            }
+        })();
+    </script>
 </body>
 
 </html>

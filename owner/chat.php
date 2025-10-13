@@ -15,6 +15,7 @@ $channel = isset($_GET['c']) && preg_match('/^[A-Za-z0-9_-]{6,60}$/', $_GET['c']
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Ephemeral Chat • Owner • BarberSure</title>
     <link rel="stylesheet" href="../assets/css/owner.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         .chat-wrap {
             max-width: 740px;
@@ -92,10 +93,10 @@ $channel = isset($_GET['c']) && preg_match('/^[A-Za-z0-9_-]{6,60}$/', $_GET['c']
 
 <body class="owner-wrapper">
     <div class="chat-wrap">
-        <h1 style="margin:0 0 1rem;font-size:1.15rem;font-weight:600;">Ephemeral Customer Chat</h1>
+        <h1 style="margin:0 0 1rem;font-size:1.15rem;font-weight:600;"><i class="bi bi-chat-left-text" aria-hidden="true"></i> Ephemeral Customer Chat</h1>
         <form method="get" style="display:flex;gap:.5rem;flex-wrap:wrap;margin:0 0 1rem;">
             <input type="text" name="c" value="<?= e($channel) ?>" placeholder="Channel ID" style="flex:1;min-width:220px;padding:.55rem .65rem;border-radius:8px;border:1px solid #243240;background:#111f2a;color:#e5ebf1;" />
-            <button class="btn" style="background:#1e2e17;border:1px solid #395c2c;color:#bbf7d0;">Open</button>
+            <button class="btn" style="background:#1e2e17;border:1px solid #395c2c;color:#bbf7d0;"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Open</button>
             <span style="font-size:.55rem;color:#9aa5b1;">Provide channel received from customer.</span>
         </form>
         <?php if ($channel): ?>
@@ -106,7 +107,7 @@ $channel = isset($_GET['c']) && preg_match('/^[A-Za-z0-9_-]{6,60}$/', $_GET['c']
                 <form class="chat-form">
                     <textarea placeholder="Type response…"></textarea>
                     <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
-                        <button type="submit" class="btn" style="background:#1e2e17;border:1px solid #395c2c;color:#bbf7d0;font-size:.65rem;padding:.55rem 1.1rem;">Send</button>
+                        <button type="submit" class="btn" style="background:#1e2e17;border:1px solid #395c2c;color:#bbf7d0;font-size:.65rem;padding:.55rem 1.1rem;"><i class="bi bi-send" aria-hidden="true"></i> Send</button>
                         <span style="font-size:.55rem;color:#9aa5b1;">Messages auto-expire; not stored in DB.</span>
                     </div>
                 </form>

@@ -244,8 +244,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ins = $pdo->prepare("INSERT INTO Appointments (customer_id, shop_id, service_id, appointment_date, payment_option, notes) VALUES (?,?,?,?,?,?)");
             $ok = $ins->execute([$userId, $shopId, $serviceId, date('Y-m-d H:i:s', $dt), $payment, $notes ?: null]);
             if ($ok) {
-                $success = 'Appointment booked successfully!';
                 $appointmentId = (int)$pdo->lastInsertId();
+                $success = $payment === 'online'
+                    ? 'Appointment created. Provide your card details below to proceed (demo only; not processed).'
+                    : 'Appointment booked successfully!';
                 // Attempt to migrate current conversation into:
                 // 1) A stable booking channel (legacy bk_<session+shop>) for continuity after we stop using pre_ on this page
                 // 2) The appointment-specific channel used in booking history (bk_<appointmentId>_<hash>)
@@ -375,6 +377,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="../assets/css/customer.css" />
     <link rel="stylesheet" href="../assets/css/toast.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <style>
         .layout {
             display: flex;
@@ -951,6 +954,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <a href="booking.php" class="btn" style="font-size:1rem;padding:12px 24px;">Reset</a>
                         </div>
                     </form>
+                    <section class="section" id="card-fields-section" style="margin-top:1rem;<?= ((($_POST['payment_option'] ?? '') === 'online') ? '' : 'display:none;') ?>">
+                        <h2 style="display:flex;align-items:center;gap:.4rem;"><i class="bi bi-credit-card"></i> Card details</h2>
+                        <div class="field-grid">
+                            <div>
+                                <label class="field-label">Card number</label>
+                                <input id="card-number" name="card_number" type="text" class="control" inputmode="numeric" autocomplete="cc-number" placeholder="1234 5678 9012 3456" maxlength="19" />
+                            </div>
+                            <div>
+                                <label class="field-label">Expiration</label>
+                                <input id="card-exp" name="card_exp" type="text" class="control" inputmode="numeric" autocomplete="cc-exp" placeholder="MM/YY" maxlength="5" />
+                            </div>
+                            <div>
+                                <label class="field-label">Security code</label>
+                                <input id="card-cvc" name="card_cvc" type="text" class="control" inputmode="numeric" autocomplete="cc-csc" placeholder="CVC" maxlength="4" />
+                            </div>
+                            <div>
+                                <label class="field-label">Country</label>
+                                <select id="card-country" name="card_country" class="control">
+                                    <option value="PH">Philippines</option>
+                                    <option value="US">United States</option>
+                                    <option value="CA">Canada</option>
+                                    <option value="GB">United Kingdom</option>
+                                    <option value="AU">Australia</option>
+                                    <option value="SG">Singapore</option>
+                                    <option value="MY">Malaysia</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="card-error" style="display:none;color:#ef4444;font-size:.78rem;margin-top:.35rem;">Please fill in all card details to book with online payment.</div>
+                        <p class="muted" style="margin-top:.5rem;font-size:.7rem;">Note: This is a demo UI only and does not process payments.</p>
+                    </section>
                 </div>
                 <div class="summary-col sticky-note" aria-live="polite">
                     <h2 class="live-summary-title">Summary</h2>
@@ -1166,6 +1200,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 overlay.setAttribute('aria-hidden', 'true');
             }
 
+            function isValidCard() {
+                const paySel = form.elements['payment_option'];
+                const pay = paySel ? paySel.value : 'cash';
+                if (pay !== 'online') return true;
+                const num = document.getElementById('card-number')?.value || '';
+                const exp = document.getElementById('card-exp')?.value || '';
+                const cvc = document.getElementById('card-cvc')?.value || '';
+                const country = document.getElementById('card-country')?.value || '';
+                const showError = (msg) => {
+                    const el = document.getElementById('card-error');
+                    if (!el) return;
+                    el.textContent = msg || 'Please fill in all card details to book with online payment.';
+                    el.style.display = '';
+                };
+                const hideError = () => {
+                    const el = document.getElementById('card-error');
+                    if (el) el.style.display = 'none';
+                };
+                // Basic formatting checks (UI-only)
+                const digits = (num || '').replace(/\D+/g, '');
+                if (digits.length < 16) {
+                    showError('Card number must be 16 digits.');
+                    return false;
+                }
+                if (!/^\d{2}\/\d{2}$/.test(exp)) {
+                    showError('Expiration must be in MM/YY format.');
+                    return false;
+                }
+                const [mm, yy] = exp.split('/');
+                const m = parseInt(mm, 10);
+                if (!(m >= 1 && m <= 12)) {
+                    showError('Expiration month must be between 01 and 12.');
+                    return false;
+                }
+                // Expiration must not be in the past (compare end of month)
+                const now = new Date();
+                const curY = now.getFullYear();
+                const curM = now.getMonth() + 1; // 1-12
+                const y = 2000 + parseInt(yy, 10); // assume 20xx
+                if (isNaN(y) || y < 2000 || y > 2099) {
+                    showError('Invalid expiration year.');
+                    return false;
+                }
+                if (y < curY || (y === curY && m < curM)) {
+                    showError('Card has expired.');
+                    return false;
+                }
+                if (!/^\d{3,4}$/.test(cvc)) {
+                    showError('CVC must be 3 or 4 digits.');
+                    return false;
+                }
+                if (!country) {
+                    showError('Please select a country.');
+                    return false;
+                }
+                hideError();
+                return true;
+            }
+
             form.addEventListener('submit', function(e) {
                 if (bypass) return; // allow actual submit after confirm
 
@@ -1174,6 +1267,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 const hasService = !!form.querySelector('input[name="service_id"]:checked');
                 if (!hasDate || !hasService) {
                     return; // allow normal submit to get server-side errors
+                }
+
+                // If online payment selected, enforce card details before showing modal
+                if (!isValidCard()) {
+                    e.preventDefault();
+                    return;
                 }
 
                 e.preventDefault();
@@ -1186,6 +1285,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
             btnConfirm?.addEventListener('click', () => {
                 if (btnConfirm.disabled) return;
+                // Re-check validity before final submit
+                if (!isValidCard()) return;
                 bypass = true;
                 closeModal();
                 form.submit();
@@ -1202,6 +1303,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Initial population
             populateSummary();
+
+            // Live re-validation for card fields to clear error as user fixes input
+            // Live re-validation for card fields (outside form), do not validate on payment option change to avoid premature errors
+            const cardNumEl = document.getElementById('card-number');
+            const cardExpEl = document.getElementById('card-exp');
+            const cardCvcEl = document.getElementById('card-cvc');
+            const cardCountryEl = document.getElementById('card-country');
+            cardNumEl?.addEventListener('input', () => {
+                isValidCard();
+            });
+            cardExpEl?.addEventListener('input', () => {
+                isValidCard();
+            });
+            cardCvcEl?.addEventListener('input', () => {
+                isValidCard();
+            });
+            cardCountryEl?.addEventListener('change', () => {
+                isValidCard();
+            });
         })();
     </script>
     <script>
@@ -1245,6 +1365,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
     <script src="../assets/js/menu-toggle.js"></script>
     <script src="../assets/js/booking_chat.js"></script>
+    <script>
+        // Toggle plain card fields section when Online payment is selected
+        (function() {
+            const select = document.querySelector('select[name="payment_option"]');
+            const cardSection = document.getElementById('card-fields-section');
+
+            function update() {
+                if (!select || !cardSection) return;
+                cardSection.style.display = (select.value === 'online') ? '' : 'none';
+                // Clear any existing card error when toggling payment option
+                const err = document.getElementById('card-error');
+                if (err) err.style.display = 'none';
+            }
+            if (select) {
+                select.addEventListener('change', update);
+                update();
+            }
+        })();
+    </script>
+    <script>
+        // Card input formatting: number groups of 4 and MM/YY for expiration
+        (function() {
+            const num = document.getElementById('card-number');
+            const exp = document.getElementById('card-exp');
+
+            function formatCardNumber(value) {
+                const digits = value.replace(/\D+/g, '').slice(0, 16); // 16 digits max
+                return digits.replace(/(.{4})/g, '$1 ').trim();
+            }
+
+            function onNumberInput(e) {
+                const el = e.target;
+                const start = el.selectionStart;
+                const prev = el.value;
+                const formatted = formatCardNumber(prev);
+                el.value = formatted;
+                // Try to preserve caret position based on number of spaces before the cursor
+                const digitsBefore = prev.slice(0, start).replace(/\D+/g, '').length;
+                let caret = digitsBefore + Math.floor(Math.max(digitsBefore - 1, 0) / 4);
+                // Clamp
+                caret = Math.min(caret, el.value.length);
+                requestAnimationFrame(() => el.setSelectionRange(caret, caret));
+            }
+
+            function formatExp(value) {
+                const digits = value.replace(/\D+/g, '').slice(0, 4);
+                if (digits.length === 0) return '';
+                if (digits.length <= 2) return digits;
+                return digits.slice(0, 2) + '/' + digits.slice(2);
+            }
+
+            function onExpInput(e) {
+                const el = e.target;
+                const start = el.selectionStart;
+                const prev = el.value;
+                const formatted = formatExp(prev);
+                el.value = formatted;
+                // Caret adjust: if we inserted a '/', move cursor accordingly
+                const digitsBefore = prev.slice(0, start).replace(/\D+/g, '').length;
+                let caret = digitsBefore + (digitsBefore > 2 ? 1 : 0);
+                caret = Math.min(caret, el.value.length);
+                requestAnimationFrame(() => el.setSelectionRange(caret, caret));
+            }
+
+            num?.addEventListener('input', onNumberInput);
+            exp?.addEventListener('input', onExpInput);
+
+            // Basic constraints for CVC (numeric only)
+            const cvc = document.getElementById('card-cvc');
+            cvc?.addEventListener('input', (e) => {
+                const el = e.target;
+                const digits = el.value.replace(/\D+/g, '').slice(0, 4);
+                el.value = digits;
+            });
+        })();
+    </script>
 </body>
 
 </html>

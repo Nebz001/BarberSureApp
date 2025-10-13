@@ -206,6 +206,23 @@ main.dashboard-main {
     color: var(--c-text-soft);
     font-weight: 500;
 }
+/* Colorize icons in section headers */
+.card h2 .bi {
+    color: var(--c-accent-alt);
+    margin-right: 0.4rem;
+    font-size: 1.05rem;
+    vertical-align: -1px;
+}
+/* Generic title icon styling for other pages */
+.section-title .bi,
+.history-header h1 .bi,
+.search-header h1 .bi,
+h1 .bi {
+    color: var(--c-accent-alt);
+    margin-right: 0.4rem;
+    font-size: 1em;
+    vertical-align: -1px;
+}
 .metric-value {
     font-size: 1.85rem;
     font-weight: 700;
@@ -222,6 +239,13 @@ main.dashboard-main {
     letter-spacing: 0.5px;
     font-weight: 600;
     color: var(--c-text-soft);
+}
+/* Colorize icons in metric labels */
+.metric-label .bi {
+    color: var(--c-accent-alt);
+    margin-right: 0.35rem;
+    font-size: 0.9rem;
+    vertical-align: -1px;
 }
 .flex {
     display: flex;
@@ -264,10 +288,23 @@ main.dashboard-main {
     border: 1px solid var(--btn-border);
     position: relative;
     overflow: hidden;
+    cursor: pointer;
 }
 .btn:hover {
     color: var(--c-text);
     border-color: var(--c-accent-alt);
+}
+/* Make icons inside buttons more visible */
+.btn .bi {
+    color: var(--c-accent-alt);
+    font-size: 1rem;
+    line-height: 1;
+}
+.btn:hover .bi {
+    color: var(--c-accent);
+}
+.btn.btn-primary .bi {
+    color: #fff;
 }
 .btn-primary {
     --btn-bg: var(--grad-accent);

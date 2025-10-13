@@ -150,6 +150,10 @@ while ($tries < 3) {
                     $list[$i]['last_role'] = $payload['role'];
                     $list[$i]['last_name'] = $payload['name'];
                     $list[$i]['type'] = $entryType;
+                    // For pre-chat, remember the customer's name for owner-side labeling
+                    if ($entryType === 'pre' && $payload['role'] === 'customer') {
+                        $list[$i]['customer_name'] = $payload['name'];
+                    }
                     $found = true;
                     break;
                 }
@@ -161,7 +165,9 @@ while ($tries < 3) {
                     'last_ts' => $payload['ts'],
                     'last_msg' => $payload['msg'],
                     'last_role' => $payload['role'],
-                    'last_name' => $payload['name']
+                    'last_name' => $payload['name'],
+                    // Set initial customer_name only for pre-chat when initiated by a customer
+                    'customer_name' => ($entryType === 'pre' && $payload['role'] === 'customer') ? $payload['name'] : null
                 ];
             }
             // Keep most recent first by last_ts desc

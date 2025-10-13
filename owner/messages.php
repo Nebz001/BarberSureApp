@@ -39,6 +39,7 @@ foreach ($shops as $s) {
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Messages • Owner • BarberSure</title>
     <link rel="stylesheet" href="../assets/css/owner.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
@@ -297,7 +298,7 @@ foreach ($shops as $s) {
     </header>
     <main class="owner-main">
         <section class="card" style="padding:1.1rem 1.2rem 1.25rem;margin-bottom:1.3rem;display:flex;flex-direction:column;gap:.55rem;">
-            <h1 style="margin:0;font-size:1.45rem;font-weight:600;">Messages Center</h1>
+            <h1 style="margin:0;font-size:1.45rem;font-weight:600;"><i class="bi bi-chat-dots" aria-hidden="true"></i>Messages Center</h1>
             <p style="margin:0;font-size:.72rem;color:var(--o-text-soft);line-height:1.55;max-width:840px;">View and reply to customer pre-booking inquiries and booking-related chats. These conversations are ephemeral (file-based) and not permanent records.</p>
             <?php if (count($shops) > 1): ?>
                 <div class="shop-switch" style="display:flex;flex-wrap:wrap;gap:.55rem;align-items:center;margin-top:.6rem;">
@@ -319,7 +320,7 @@ foreach ($shops as $s) {
             <section class="msg-layout">
                 <div class="msg-col inquiries-col" aria-label="Inquiries list">
                     <div style="padding:.5rem .65rem; border-bottom:1px solid #1d2b37; display:flex; justify-content:space-between; align-items:center;">
-                        <h3>Inquiries</h3>
+                        <h3><i class="bi bi-question-circle" aria-hidden="true"></i> Inquiries</h3>
                         <span class="badge-sec" id="countInquiries">0</span>
                     </div>
                     <div class="msg-list" id="listInquiries">
@@ -328,7 +329,7 @@ foreach ($shops as $s) {
                 </div>
                 <div class="msg-col bookings-col" aria-label="Bookings chat list">
                     <div style="padding:.5rem .65rem; border-bottom:1px solid #1d2b37; display:flex; justify-content:space-between; align-items:center;">
-                        <h3>Bookings</h3>
+                        <h3><i class="bi bi-journal-text" aria-hidden="true"></i> Bookings</h3>
                         <span class="badge-sec" id="countBookings">0</span>
                     </div>
                     <div class="msg-list" id="listBookings">

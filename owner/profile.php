@@ -199,6 +199,7 @@ function format_currency($amount)
     <link rel="stylesheet" href="../assets/css/owner.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         .form-grid {
             display: grid;
@@ -495,7 +496,7 @@ function format_currency($amount)
                 <?= e(substr($user['full_name'], 0, 1)) ?>
             </div>
             <div class="profile-info">
-                <h1><?= e($user['full_name']) ?></h1>
+                <h1><i class="bi bi-person" aria-hidden="true"></i> <?= e($user['full_name']) ?></h1>
                 <div class="profile-meta">
                     <span>📧 <?= e($user['email']) ?></span>
                     <?php if (!empty($user['phone'])): ?>
@@ -549,7 +550,7 @@ function format_currency($amount)
         <div class="section-grid">
             <!-- Personal Information -->
             <section class="card">
-                <h2 style="margin:0 0 1rem;font-size:1rem;">Personal Information</h2>
+                <h2 style="margin:0 0 1rem;font-size:1rem;"><i class="bi bi-id-card" aria-hidden="true"></i> Personal Information</h2>
                 <form method="post">
                     <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>" />
                     <input type="hidden" name="action" value="update_profile" />
@@ -589,12 +590,12 @@ function format_currency($amount)
 
                     <p class="mini-note">Phone number must be exactly 10 digits after +63 (starting with 9).</p>
 
-                    <button type="submit" class="btn btn-primary">Update Profile</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle" aria-hidden="true"></i>Update Profile</button>
                 </form>
 
                 <!-- Password Change Section -->
                 <div class="password-section">
-                    <h3 style="margin:0 0 1rem;font-size:.9rem;">Change Password</h3>
+                    <h3 style="margin:0 0 1rem;font-size:.9rem;"><i class="bi bi-shield-lock" aria-hidden="true"></i> Change Password</h3>
                     <form method="post">
                         <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>" />
                         <input type="hidden" name="action" value="change_password" />
@@ -615,19 +616,19 @@ function format_currency($amount)
 
                         <p class="mini-note">Password must be at least 8 characters long.</p>
 
-                        <button type="submit" class="btn btn-primary">Change Password</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-key" aria-hidden="true"></i>Change Password</button>
                     </form>
                 </div>
             </section>
 
             <!-- Shops & Activity -->
             <section class="card">
-                <h2 style="margin:0 0 1rem;font-size:1rem;">Your Shops <span style="font-size:.6rem;color:#6b8299;">(<?= count($userShops) ?>)</span></h2>
+                <h2 style="margin:0 0 1rem;font-size:1rem;"><i class="bi bi-shop" aria-hidden="true"></i> Your Shops <span style="font-size:.6rem;color:#6b8299;">(<?= count($userShops) ?>)</span></h2>
 
                 <?php if (empty($userShops)): ?>
                     <div style="text-align:center;padding:2rem;color:var(--o-text-soft);">
                         <p>No shops registered yet.</p>
-                        <a href="manage_shop.php" class="btn btn-primary">Register Your First Shop</a>
+                        <a href="manage_shop.php" class="btn btn-primary"><i class="bi bi-plus-circle" aria-hidden="true"></i>Register Your First Shop</a>
                     </div>
                 <?php else: ?>
                     <div class="shops-list">

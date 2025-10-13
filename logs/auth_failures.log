@@ -1,2 +1,4 @@
 2025-10-09T15:11:33+02:00 login_fail email=tanbenedict48@gmail.com reason=suspended user_id=14
 2025-10-09T16:01:19+02:00 login_fail email=cust1@example.com reason=bad_password user_id=5
+2025-10-13T12:51:18+02:00 login_fail email=owner1@example.com reason=bad_password user_id=2
+2025-10-13T12:56:47+02:00 login_fail email=customer1@example.com reason=not_found

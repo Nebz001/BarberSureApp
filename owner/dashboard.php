@@ -184,6 +184,7 @@ if (!$isVerified) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="../assets/css/owner.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         .rating-star {
             color: #fbbf24;
@@ -237,11 +238,11 @@ if (!$isVerified) {
                 <p style="font-size:.75rem;color:var(--o-text-soft);margin:.6rem 0 0;max-width:780px;line-height:1.55;">Monitor performance across your barbershops: appointments, revenue, and customer feedback — all in one unified view.</p>
             </section>
             <div class="metrics-grid">
-                <div class="metric"><span class="metric-label">Total Shops</span><span class="metric-value"><?= $shopsTotal ?></span><span class="metric-trend">Approved: <?= $shopsApproved ?></span></div>
-                <div class="metric"><span class="metric-label">Today Appts</span><span class="metric-value"><?= (int)$apptStats['today_cnt'] ?></span><span class="metric-trend">Next 7d: <?= (int)$apptStats['next7'] ?></span></div>
-                <div class="metric"><span class="metric-label">Revenue 30d</span><span class="metric-value">₱<?= number_format($rev30, 0) ?></span><span class="metric-trend">Avg/day: ₱<?= number_format($rev30 / 30, 0) ?></span></div>
-                <div class="metric"><span class="metric-label">Reviews 30d</span><span class="metric-value"><?= (int)$revStats['cnt'] ?></span><span class="metric-trend">Avg Rating: <?= number_format((float)$revStats['avg_rating'], 1) ?></span></div>
-                <div class="metric"><span class="metric-label">Spark Revenue</span>
+                <div class="metric"><span class="metric-label"><i class="bi bi-shop" aria-hidden="true"></i>Total Shops</span><span class="metric-value"><?= $shopsTotal ?></span><span class="metric-trend">Approved: <?= $shopsApproved ?></span></div>
+                <div class="metric"><span class="metric-label"><i class="bi bi-calendar-day" aria-hidden="true"></i>Today Appts</span><span class="metric-value"><?= (int)$apptStats['today_cnt'] ?></span><span class="metric-trend">Next 7d: <?= (int)$apptStats['next7'] ?></span></div>
+                <div class="metric"><span class="metric-label"><i class="bi bi-cash-coin" aria-hidden="true"></i>Revenue 30d</span><span class="metric-value">₱<?= number_format($rev30, 0) ?></span><span class="metric-trend">Avg/day: ₱<?= number_format($rev30 / 30, 0) ?></span></div>
+                <div class="metric"><span class="metric-label"><i class="bi bi-star" aria-hidden="true"></i>Reviews 30d</span><span class="metric-value"><?= (int)$revStats['cnt'] ?></span><span class="metric-trend">Avg Rating: <?= number_format((float)$revStats['avg_rating'], 1) ?></span></div>
+                <div class="metric"><span class="metric-label"><i class="bi bi-activity" aria-hidden="true"></i>Spark Revenue</span>
                     <div class="spark" aria-label="Revenue last 14 days">
                         <?php foreach ($sparkSeries as $pt): $h = $pt['v'] > 0 ? max(2, (int)round(($pt['v'] / $maxSpark) * 34)) : 2; ?><span title="<?= e($pt['d'] . ': ₱' . number_format($pt['v'], 0)) ?>" style="height:<?= $h ?>px;"></span><?php endforeach; ?>
                     </div><span class="metric-trend">Last 14d trend</span>
@@ -249,17 +250,17 @@ if (!$isVerified) {
             </div>
             <div class="section-grid">
                 <div class="card" style="display:flex;flex-direction:column;gap:.8rem;">
-                    <h2 style="font-size:1.05rem;margin:0 0 .2rem;">Quick Actions</h2>
+                    <h2 style="font-size:1.05rem;margin:0 0 .2rem;"><i class="bi bi-lightning-charge" aria-hidden="true"></i>Quick Actions</h2>
                     <div class="flex wrap gap-sm">
-                        <a href="register_shop.php" class="btn btn-primary">Register Shop</a>
-                        <a href="manage_shop.php" class="btn">Manage Shops</a>
-                        <a href="bookings.php" class="btn">View Bookings</a>
-                        <a href="payments.php" class="btn">Payments</a>
-                        <a href="profile.php" class="btn">Profile</a>
+                        <a href="register_shop.php" class="btn btn-primary"><i class="bi bi-plus-circle" aria-hidden="true"></i>Register Shop</a>
+                        <a href="manage_shop.php" class="btn"><i class="bi bi-tools" aria-hidden="true"></i>Manage Shops</a>
+                        <a href="bookings.php" class="btn"><i class="bi bi-journal-text" aria-hidden="true"></i>View Bookings</a>
+                        <a href="payments.php" class="btn"><i class="bi bi-credit-card" aria-hidden="true"></i>Payments</a>
+                        <a href="profile.php" class="btn"><i class="bi bi-person-circle" aria-hidden="true"></i>Profile</a>
                     </div>
                 </div>
                 <div class="card" style="display:flex;flex-direction:column;gap:.7rem;">
-                    <h2>Upcoming Appointments</h2>
+                    <h2><i class="bi bi-clock" aria-hidden="true"></i>Upcoming Appointments</h2>
                     <?php if (!$upcoming): ?><p class="small-muted" style="margin:.2rem 0 .4rem;">No upcoming appointments.</p><?php else: ?>
                         <ul class="list" aria-label="Upcoming appointments">
                             <?php foreach ($upcoming as $a): $dt = strtotime($a['appointment_date']); ?>
@@ -280,7 +281,7 @@ if (!$isVerified) {
                     <?php endif; ?>
                 </div>
                 <div class="card" style="display:flex;flex-direction:column;gap:.7rem;">
-                    <h2>Recent Reviews</h2>
+                    <h2><i class="bi bi-chat-square-quote" aria-hidden="true"></i>Recent Reviews</h2>
                     <?php if (!$recentReviews): ?><p class="small-muted" style="margin:.2rem 0 .4rem;">No reviews yet.</p><?php else: ?>
                         <ul class="list" aria-label="Recent reviews">
                             <?php foreach ($recentReviews as $r): ?>

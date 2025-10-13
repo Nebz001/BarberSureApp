@@ -283,6 +283,7 @@ function format_payment_time($datetime)
     <title>Payments • Owner • BarberSure</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link rel="stylesheet" href="../assets/css/owner.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
@@ -525,7 +526,7 @@ function format_payment_time($datetime)
 
         <?php if (isset($planSel) && !$subscriptionNotice && !$subscriptionError): ?>
             <section class="card" style="margin-bottom:1.5rem;">
-                <h2 style="margin:0 0 .75rem;font-size:1rem;">Confirm <?= $planSel === 'monthly' ? 'Monthly' : 'Yearly' ?> Subscription</h2>
+                <h2 style="margin:0 0 .75rem;font-size:1rem;"><i class="bi bi-bag-check" aria-hidden="true"></i> Confirm <?= $planSel === 'monthly' ? 'Monthly' : 'Yearly' ?> Subscription</h2>
                 <?php
                 $amt = $baseAmount;
                 // No tax applies to subscriptions (business rule); show straight amount
@@ -569,7 +570,7 @@ function format_payment_time($datetime)
 
         <!-- Revenue Overview -->
         <section class="card" style="margin-bottom:1.5rem;">
-            <h2 style="margin:0 0 1rem;font-size:1rem;">Revenue Overview</h2>
+            <h2 style="margin:0 0 1rem;font-size:1rem;"><i class="bi bi-graph-up" aria-hidden="true"></i> Revenue Overview</h2>
             <div class="revenue-cards">
                 <div class="revenue-card">
                     <h3>Today</h3>
@@ -609,7 +610,7 @@ function format_payment_time($datetime)
                             <div style="text-align:right;">
                                 <div style="font-weight:600;color:#fcd34d;"><?= format_currency($unpaid['price']) ?></div>
                                 <button class="btn-mark-paid" onclick="openPaymentModal(<?= (int)$unpaid['appointment_id'] ?>, '<?= e($unpaid['customer_name']) ?>', <?= $unpaid['price'] ?>)">
-                                    Mark Paid
+                                    <i class="bi bi-cash-coin" aria-hidden="true"></i> Mark Paid
                                 </button>
                             </div>
                         </div>
@@ -620,7 +621,7 @@ function format_payment_time($datetime)
 
         <!-- Filters -->
         <section class="card" style="margin-bottom:1.5rem;">
-            <h2 style="margin:0 0 .75rem;font-size:1rem;">Payment History Filters</h2>
+            <h2 style="margin:0 0 .75rem;font-size:1rem;"><i class="bi bi-funnel" aria-hidden="true"></i> Payment History Filters</h2>
             <form method="get" action="payments.php">
                 <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
                     <label>Shop
@@ -653,8 +654,8 @@ function format_payment_time($datetime)
                     </label>
                 </div>
                 <div style="margin-top:.8rem;">
-                    <button type="submit" class="btn btn-primary">Filter</button>
-                    <a href="payments.php" class="btn" style="margin-left:.5rem;">Reset</a>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-funnel" aria-hidden="true"></i>Filter</button>
+                    <a href="payments.php" class="btn" style="margin-left:.5rem;"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>Reset</a>
                 </div>
             </form>
         </section>
@@ -662,7 +663,7 @@ function format_payment_time($datetime)
         <!-- Payment History -->
         <section class="card" style="display:flex;flex-direction:column;gap:.9rem;">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.75rem;">
-                <h2 style="margin:0;font-size:1rem;">Payment History <span style="font-size:.6rem;color:#6b8299;">(<?= $totalPayments ?>)</span></h2>
+                <h2 style="margin:0;font-size:1rem;"><i class="bi bi-journal-check" aria-hidden="true"></i> Payment History <span style="font-size:.6rem;color:#6b8299;">(<?= $totalPayments ?>)</span></h2>
                 <?php if ($totalPayments > $perPage): ?>
                     <span style="font-size:.6rem;color:#6b8299;">Page <?= $page ?> of <?= $maxPage ?></span>
                 <?php endif; ?>
@@ -783,8 +784,8 @@ function format_payment_time($datetime)
                 </div>
 
                 <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1.5rem;">
-                    <button type="button" class="btn" onclick="closePaymentModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Record Payment</button>
+                    <button type="button" class="btn" onclick="closePaymentModal()"><i class="bi bi-x-circle" aria-hidden="true"></i>Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-receipt" aria-hidden="true"></i>Record Payment</button>
                 </div>
             </form>
         </div>

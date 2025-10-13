@@ -117,6 +117,82 @@ function status_chip_class($st)
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="../assets/css/customer.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <style>
+        /* Minimal modal styles (reused from booking page) */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay[aria-hidden="false"] {
+            display: flex;
+        }
+
+        .modal-card {
+            background: var(--c-bg-alt);
+            border: 1px solid var(--c-border-soft);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-elev);
+            color: var(--c-text);
+            padding: 1rem 1.1rem 1.1rem;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .5rem;
+            margin-bottom: .6rem;
+        }
+
+        .modal-title {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 600;
+            letter-spacing: .4px;
+        }
+
+        .modal-body {
+            font-size: .8rem;
+            color: var(--c-text-soft);
+        }
+
+        .modal-summary {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: .45rem .75rem;
+            margin: .6rem 0 .2rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: .6rem;
+            justify-content: flex-end;
+            margin-top: .9rem;
+        }
+
+        .btn-ghost {
+            background: var(--c-surface);
+            color: var(--c-text-soft);
+            border: 1px solid var(--c-border);
+            padding: 0.5rem 0.85rem;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            letter-spacing: .4px;
+            cursor: pointer;
+        }
+
+        .btn-ghost:hover {
+            color: var(--c-text);
+            border-color: var(--c-accent-alt);
+        }
+    </style>
 </head>
 
 <body class="dashboard-wrapper">
@@ -144,10 +220,9 @@ function status_chip_class($st)
             </div>
             <p style="margin:.15rem 0 0;font-size:.9rem;color:var(--c-text-soft);max-width:760px;line-height:1.5;">Track appointments, explore new barbershops, and manage your account in one place.</p>
             <div class="quick-actions">
-                <a class="btn btn-primary" href="search.php">Search Shops</a>
-                <a class="btn" href="booking.php">Book Now</a>
-                <a class="btn" href="bookings_history.php">History</a>
-                <a class="btn" href="profile.php">Edit Profile</a>
+                <a class="btn btn-primary" href="search.php"><i class="bi bi-search" aria-hidden="true"></i> <span>Search Shops</span></a>
+                <a class="btn" href="bookings_history.php"><i class="bi bi-clock-history" aria-hidden="true"></i> <span>History</span></a>
+                <a class="btn" href="profile.php"><i class="bi bi-person-gear" aria-hidden="true"></i> <span>Edit Profile</span></a>
             </div>
             <div class="profile-bar">
                 <div class="progress-wrap">
@@ -164,23 +239,23 @@ function status_chip_class($st)
 
         <div class="grid-stats">
             <div class="card">
-                <div class="metric-label">Total Appointments</div>
+                <div class="metric-label"><i class="bi bi-calendar3" aria-hidden="true"></i> <span>Total Appointments</span></div>
                 <div class="metric-value"><?= $counts['total'] ?></div>
             </div>
             <div class="card">
-                <div class="metric-label">Upcoming</div>
+                <div class="metric-label"><i class="bi bi-calendar-event" aria-hidden="true"></i> <span>Upcoming</span></div>
                 <div class="metric-value"><?= $counts['upcoming'] ?></div>
             </div>
             <div class="card">
-                <div class="metric-label">Completed</div>
+                <div class="metric-label"><i class="bi bi-check2-circle" aria-hidden="true"></i> <span>Completed</span></div>
                 <div class="metric-value"><?= $counts['completed'] ?></div>
             </div>
             <div class="card">
-                <div class="metric-label">Cancelled</div>
+                <div class="metric-label"><i class="bi bi-x-circle" aria-hidden="true"></i> <span>Cancelled</span></div>
                 <div class="metric-value"><?= $counts['cancelled'] ?></div>
             </div>
             <div class="card">
-                <div class="metric-label">Reviews</div>
+                <div class="metric-label"><i class="bi bi-star-fill" aria-hidden="true"></i> <span>Reviews</span></div>
                 <div class="metric-value"><?= $counts['reviews'] ?></div>
             </div>
         </div>
@@ -188,7 +263,7 @@ function status_chip_class($st)
         <section class="flex gap" style="flex-wrap:wrap; align-items:stretch;">
             <div class="card" style="flex:1 1 340px; min-width:300px;">
                 <div class="card-header">
-                    <h2>Upcoming Appointment</h2>
+                    <h2><i class="bi bi-calendar-event" aria-hidden="true"></i> <span>Upcoming Appointment</span></h2>
                 </div>
                 <?php if ($upcoming): ?>
                     <div style="font-size:.85rem; line-height:1.4;">
@@ -197,16 +272,16 @@ function status_chip_class($st)
                         <div style="font-size:.75rem;">Date: <?= e(fmt_dt($upcoming['appointment_date'])) ?></div>
                         <div style="margin-top:.55rem;">
                             <span class="status-chip <?= status_chip_class($upcoming['status']) ?>"><?= strtoupper(e($upcoming['status'])) ?></span>
-                            <a href="booking.php?id=<?= (int)$upcoming['appointment_id'] ?>" class="btn" style="margin-left:.5rem;">View</a>
+                            <button type="button" class="btn js-view-appt" data-appt-id="<?= (int)$upcoming['appointment_id'] ?>" style="margin-left:.5rem;"><i class="bi bi-eye" aria-hidden="true"></i> <span>View</span></button>
                         </div>
                     </div>
                 <?php else: ?>
-                    <p class="small-muted" style="margin:0;">No upcoming bookings. <a href="booking.php" style="color:var(--c-accent);text-decoration:none;">Book one now</a>.</p>
+                    <p class="small-muted" style="margin:0;">No upcoming bookings.</p>
                 <?php endif; ?>
             </div>
             <div class="card" style="flex:1 1 340px; min-width:300px;">
                 <div class="card-header">
-                    <h2>Suggestions</h2>
+                    <h2><i class="bi bi-stars" aria-hidden="true"></i> <span>Suggestions</span></h2>
                 </div>
                 <?php if ($suggestions): ?>
                     <div class="suggestions-grid">
@@ -215,7 +290,7 @@ function status_chip_class($st)
                                 <div style="font-size:.8rem;font-weight:600;letter-spacing:.3px;" title="<?= e($sg['shop_name']) ?>"><?= e($sg['shop_name']) ?></div>
                                 <div class="small-muted" style="font-size:.65rem;"><?= e($sg['city'] ?: 'Batangas') ?></div>
                                 <div style="font-size:.65rem;margin-top:.3rem;">⭐ <?= number_format((float)$sg['avg_rating'], 1) ?> <span class="small-muted">(<?= (int)$sg['reviews'] ?>)</span></div>
-                                <a href="../shop_details.php?id=<?= (int)$sg['shop_id'] ?>" class="btn" style="margin-top:.4rem; font-size:.65rem; padding:.45rem .6rem;">View</a>
+                                <a href="../shop_details.php?id=<?= (int)$sg['shop_id'] ?>" class="btn" style="margin-top:.4rem; font-size:.65rem; padding:.45rem .6rem;"><i class="bi bi-eye" aria-hidden="true"></i> <span>View</span></a>
                             </div>
                         <?php endforeach; ?>
                     </div>
@@ -229,7 +304,7 @@ function status_chip_class($st)
         <section class="flex gap mt" style="flex-wrap:wrap; align-items:flex-start;">
             <div class="card" style="flex:2 1 460px; min-width:320px;">
                 <div class="card-header">
-                    <h2>Recent Bookings</h2>
+                    <h2><i class="bi bi-clock-history" aria-hidden="true"></i> <span>Recent Bookings</span></h2>
                 </div>
                 <?php if ($recentBookings): ?>
                     <ul class="list">
@@ -250,7 +325,7 @@ function status_chip_class($st)
             </div>
             <div class="card" style="flex:1 1 340px; min-width:300px;">
                 <div class="card-header">
-                    <h2>Your Reviews</h2>
+                    <h2><i class="bi bi-star" aria-hidden="true"></i> <span>Your Reviews</span></h2>
                 </div>
                 <?php if ($recentReviews): ?>
                     <ul class="list">
@@ -276,6 +351,110 @@ function status_chip_class($st)
     </main>
     <footer class="dashboard-footer">&copy; <?= date('Y') ?> BarberSure • All rights reserved.</footer>
     <script src="../assets/js/menu-toggle.js"></script>
+    <div id="appt-modal" class="modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="appt-title">
+        <div class="modal-card" style="width:min(560px,92vw);">
+            <div class="modal-header">
+                <h3 id="appt-title" class="modal-title">Appointment Details</h3>
+            </div>
+            <div class="modal-body">
+                <div class="modal-summary">
+                    <div><strong>Shop</strong></div>
+                    <div id="ad-shop">—</div>
+                    <div><strong>Service</strong></div>
+                    <div id="ad-service">—</div>
+                    <div><strong>Date & Time</strong></div>
+                    <div id="ad-dt">—</div>
+                    <div><strong>Status</strong></div>
+                    <div id="ad-status">—</div>
+                    <div><strong>Payment</strong></div>
+                    <div id="ad-pay">—</div>
+                    <div><strong>Notes</strong></div>
+                    <div id="ad-notes">—</div>
+                </div>
+                <div id="ad-error" class="small-muted" style="color:#ef4444;display:none;margin-top:.5rem;">Failed to load details.</div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-ghost js-appt-close">Close</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function() {
+            const modal = document.getElementById('appt-modal');
+            const closeBtns = modal?.querySelectorAll('.js-appt-close');
+
+            function open() {
+                modal?.setAttribute('aria-hidden', 'false');
+            }
+
+            function close() {
+                modal?.setAttribute('aria-hidden', 'true');
+            }
+            closeBtns?.forEach(b => b.addEventListener('click', close));
+            modal?.addEventListener('click', (e) => {
+                if (e.target === modal) close();
+            });
+
+            function set(id, text) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = text;
+            }
+
+            function fmt(dt) {
+                try {
+                    const d = new Date(dt);
+                    if (!isNaN(d)) return d.toLocaleString();
+                } catch {}
+                return dt;
+            }
+
+            async function fetchDetails(id) {
+                set('ad-error', '');
+                const err = document.getElementById('ad-error');
+                if (err) err.style.display = 'none';
+                set('ad-shop', '—');
+                set('ad-service', '—');
+                set('ad-dt', '—');
+                set('ad-status', '—');
+                set('ad-pay', '—');
+                set('ad-notes', '—');
+                try {
+                    const res = await fetch(`../api/appointment_details.php?id=${encodeURIComponent(id)}`, {
+                        credentials: 'same-origin'
+                    });
+                    if (!res.ok) {
+                        throw new Error('HTTP ' + res.status);
+                    }
+                    const data = await res.json();
+                    if (!data.ok) {
+                        throw new Error(data.error || 'Failed');
+                    }
+                    const a = data.appointment;
+                    set('ad-shop', `${a.shop.shop_name}${a.shop.city ? ' • '+a.shop.city : ''}`);
+                    set('ad-service', `${a.service.service_name} • ₱${Number(a.service.price).toFixed(2)} • ${a.service.duration_minutes} mins`);
+                    set('ad-dt', fmt(a.appointment_date));
+                    set('ad-status', String(a.status).toUpperCase());
+                    set('ad-pay', a.payment_option === 'online' ? 'Online' : 'Cash');
+                    set('ad-notes', a.notes && a.notes.trim() !== '' ? a.notes : '—');
+                } catch (e) {
+                    const errEl = document.getElementById('ad-error');
+                    if (errEl) {
+                        errEl.style.display = '';
+                        errEl.textContent = 'Failed to load details.';
+                    }
+                }
+            }
+
+            document.querySelectorAll('.js-view-appt').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-appt-id');
+                    if (!id) return;
+                    open();
+                    fetchDetails(id);
+                });
+            });
+        })();
+    </script>
 </body>
 
 </html>

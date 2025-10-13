@@ -153,6 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="../assets/css/customer.css" />
     <link rel="stylesheet" href="../assets/css/toast.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <style>
         .grid-2 {
             display: grid;
@@ -242,7 +243,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <main class="dashboard-main">
         <section class="card" style="padding:1.25rem 1.3rem 1.4rem;">
             <div class="card-header" style="margin-bottom:.8rem;display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;">
-                <h1 style="font-size:1.3rem;margin:0;">Your Profile</h1>
+                <h1 style="font-size:1.3rem;margin:0;"><i class="bi bi-person-circle" aria-hidden="true"></i> <span>Your Profile</span></h1>
                 <div class="muted" style="font-size:.7rem;">Member since <?= e(date('M Y', strtotime($user['created_at'] ?? $sessionUser['created_at'] ?? 'now'))) ?></div>
             </div>
 
@@ -281,7 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             <?php endif; ?>
 
-            <h2 class="section-title">Profile Information</h2>
+            <h2 class="section-title"><i class="bi bi-card-text" aria-hidden="true"></i> <span>Profile Information</span></h2>
             <form method="post" class="grid-2" autocomplete="off">
                 <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>" />
                 <input type="hidden" name="action" value="update_profile" />
@@ -315,8 +316,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
                 <div style="grid-column:1/-1; display:flex; gap:.6rem; flex-wrap:wrap;">
-                    <button type="submit" class="btn btn-primary" style="font-size:.72rem;">Save Changes</button>
-                    <a class="btn" href="profile.php" style="font-size:.72rem;">Reset</a>
+                    <button type="submit" class="btn btn-primary" style="font-size:.72rem;"><i class="bi bi-check2-circle" aria-hidden="true"></i> <span>Save Changes</span></button>
+                    <a class="btn" href="profile.php" style="font-size:.72rem;"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> <span>Reset</span></a>
                     <?php if ($returnTo): ?>
                         <a class="btn" href="<?= e($returnTo) ?>" style="font-size:.72rem;">Continue to Booking</a>
                     <?php endif; ?>
@@ -324,7 +325,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </form>
 
             <div class="hr"></div>
-            <h2 class="section-title">Change Password</h2>
+            <h2 class="section-title"><i class="bi bi-shield-lock" aria-hidden="true"></i> <span>Change Password</span></h2>
             <form method="post" class="grid-2" autocomplete="off">
                 <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>" />
                 <input type="hidden" name="action" value="change_password" />
@@ -341,7 +342,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input id="confirm_password" name="confirm_password" type="password" required minlength="8" />
                 </div>
                 <div style="grid-column:1/-1; display:flex; gap:.6rem;">
-                    <button type="submit" class="btn btn-primary" style="font-size:.72rem;">Change Password</button>
+                    <button type="submit" class="btn btn-primary" style="font-size:.72rem;"><i class="bi bi-key" aria-hidden="true"></i> <span>Change Password</span></button>
                 </div>
             </form>
         </section>

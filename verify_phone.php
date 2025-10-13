@@ -2,6 +2,7 @@
 require_once __DIR__ . '/config/helpers.php';
 require_once __DIR__ . '/config/auth.php';
 require_once __DIR__ . '/config/notifications.php';
+require_once __DIR__ . '/config/mailer.php';
 
 $pending = $_SESSION['pending_registration'] ?? null;
 if (!$pending) {
@@ -11,11 +12,13 @@ if (!$pending) {
 
 $errors = [];
 $resent = false;
-$masked = function (string $phone) {
-    $p = preg_replace('/\D+/', '', $phone);
-    if (strlen($p) <= 4) return $phone;
-    $last4 = substr($p, -4);
-    return '••• •• •• ' . $last4;
+// Mask email address for display (e.g., j***@domain.com)
+$maskedEmail = function (string $email) {
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return $email;
+    [$user, $domain] = explode('@', $email, 2);
+    if (strlen($user) <= 1) return '*@' . $domain;
+    $visible = substr($user, 0, 1);
+    return $visible . str_repeat('*', max(1, strlen($user) - 1)) . '@' . $domain;
 };
 
 // Handle actions: verify or resend
@@ -113,11 +116,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         } elseif ($action === 'resend') {
-            // generate a new code and send
+            // generate a new code and send via email
             $code = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
             $_SESSION['pending_registration']['code'] = $code;
             $_SESSION['pending_registration']['created_at'] = time();
-            send_sms($pending['phone'], "Your BarberSure verification code is: $code");
+            $first = trim(explode(' ', $pending['full_name'])[0] ?? '');
+            $subject = 'Your BarberSure verification code';
+            $html = '<p>Hi ' . e($first ?: 'there') . ',</p>' .
+                '<p>Your BarberSure verification code is: <strong style="letter-spacing:2px;">' . e($code) . '</strong></p>' .
+                '<p>This code expires in 10 minutes. If you did not request this, you can ignore this email.</p>' .
+                '<p>— BarberSure</p>';
+            $text = "Hi " . ($first ?: 'there') . ",\n\nYour BarberSure verification code is: " . $code . "\nIt expires in 10 minutes.\n\n— BarberSure";
+            send_app_email($pending['email'], $subject, $html, $text);
             $resent = true;
         }
     }
@@ -128,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <head>
     <meta charset="UTF-8">
-    <title>Verify Phone • BarberSure</title>
+    <title>Verify Email • BarberSure</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="stylesheet" href="assets/css/register.css">
 </head>
@@ -160,7 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <path d="M20 6 9 17l-5-5" />
                     </svg>
                 </div>
-                <div class="toast-body"><strong>Code Sent</strong> A new code was sent to your phone.</div>
+                <div class="toast-body"><strong>Code Sent</strong> A new code was sent to your email.</div>
                 <button class="toast-close" aria-label="Close">&times;</button>
                 <div class="toast-progress"></div>
             </div>
@@ -169,8 +179,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <main class="auth-card register" role="main">
         <header class="auth-header">
-            <h1>Verify Your Phone</h1>
-            <p>We sent a 6-digit code to <?= e($masked($pending['phone'])) ?>. Enter it below to complete registration.</p>
+            <h1>Verify Your Email</h1>
+            <p>We sent a 6-digit code to <?= e($maskedEmail($pending['email'])) ?>. Enter it below to complete registration.</p>
         </header>
 
         <form method="post" class="auth-form" novalidate>
@@ -178,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <label class="verification-label">
                 Verification Code
                 <input name="code" inputmode="numeric" pattern="^\d{6}$" maxlength="6" placeholder="••••••" required autocomplete="one-time-code">
-                <small class="field-hint">Enter the 6-digit code sent to your phone</small>
+                <small class="field-hint">Enter the 6-digit code sent to your email</small>
             </label>
             <div class="actions-inline">
                 <button type="submit" name="action" value="verify" class="primary-btn">
@@ -189,7 +199,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </button>
             </div>
             <div class="secondary-link" style="margin-top:.75rem;">
-                Entered the wrong number? <a href="register.php">Go back</a>
+                Entered the wrong email? <a href="register.php">Go back</a>
             </div>
         </form>
 

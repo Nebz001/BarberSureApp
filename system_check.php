@@ -104,7 +104,7 @@ try {
 echo "<h2>6. System Status</h2>\n";
 echo "<span class='info'>✓ Phone input validation: Numeric-only with 10-digit limit</span><br>\n";
 echo "<span class='info'>✓ Phone prefix: Fixed +63 with visual separation</span><br>\n";
-echo "<span class='info'>✓ SMS verification: 2-step registration process</span><br>\n";
+echo "<span class='info'>✓ Email verification: 2-step registration process</span><br>\n";
 echo "<span class='info'>✓ Theme: Dark amber/gold design implemented</span><br>\n";
 echo "<span class='info'>✓ Booking validation: Hours and phone requirements</span><br>\n";
 

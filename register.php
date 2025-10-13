@@ -2,6 +2,7 @@
 require_once __DIR__ . '/config/helpers.php';
 require_once __DIR__ . '/config/auth.php';
 require_once __DIR__ . '/config/notifications.php';
+require_once __DIR__ . '/config/mailer.php';
 
 $errors = [];
 $account_created = false;
@@ -109,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!$errors) {
-        // Generate and send verification code via SMS.
+        // Generate and send verification code via Email (Gmail SMTP configured in config/mail.php).
         $code = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $_SESSION['pending_registration'] = [
             'full_name'   => $full_name,
@@ -130,8 +131,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'created_at'  => time()
         ];
 
-        // Send the SMS right after registration
-        send_sms($phone, "Your BarberSure verification code is: $code");
+        // Send the email right after registration
+        $first = trim(explode(' ', $full_name)[0] ?? '');
+        $subject = 'Your BarberSure verification code';
+        $html = '<p>Hi ' . e($first ?: 'there') . ',</p>' .
+            '<p>Your BarberSure verification code is: <strong style="letter-spacing:2px;">' . e($code) . '</strong></p>' .
+            '<p>This code expires in 10 minutes. If you did not request this, you can ignore this email.</p>' .
+            '<p>— BarberSure</p>';
+        $text = "Hi " . ($first ?: 'there') . ",\n\nYour BarberSure verification code is: " . $code . "\nIt expires in 10 minutes.\n\n— BarberSure";
+        // Fire and forget; mailer already logs outcomes
+        send_app_email($email, $subject, $html, $text);
         // Redirect to verification step
         redirect('verify_phone.php');
     }
