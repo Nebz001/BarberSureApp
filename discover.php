@@ -193,8 +193,8 @@ if ($totalPages < 1) $totalPages = 1;
         }
 
         .page-item.active .page-link {
-            background: linear-gradient(135deg, #f59e0b, #fbbf24);
-            border-color: #8f6a1a;
+            background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+            border-color: #1e4dbb;
         }
 
         .form-select,
@@ -204,13 +204,23 @@ if ($totalPages < 1) $totalPages = 1;
             color: #d8dde3;
         }
 
+        /* Make keyword field text white for better contrast */
+        input.form-control[name="q"] {
+            color: #ffffff;
+            caret-color: #ffffff;
+        }
+
+        input.form-control[name="q"]::placeholder {
+            color: #9aa5b1;
+        }
+
         .form-control:focus,
         .form-select:focus {
-            box-shadow: 0 0 0 2px rgba(245, 158, 11, .35);
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, .35);
         }
 
         .btn-gradient {
-            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            background: linear-gradient(135deg, #0ea5e9, #3b82f6);
             border: 0;
             font-weight: 600;
             letter-spacing: .4px;
@@ -288,15 +298,39 @@ if ($totalPages < 1) $totalPages = 1;
 
         .discover-top-band {
             position: relative;
-            background: radial-gradient(circle at 15% 20%, rgba(99, 102, 241, .18), transparent 70%), radial-gradient(circle at 85% 25%, rgba(245, 158, 11, .18), transparent 70%), linear-gradient(180deg, #0d1319, #0b1015);
+            overflow: hidden;
         }
 
-        .discover-top-band:before {
+        /* Match landing hero background treatment (blurred circles) */
+        .discover-top-band::before,
+        .discover-top-band::after {
             content: "";
             position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg, rgba(99, 102, 241, .08), transparent, rgba(245, 158, 11, .08));
+            width: 680px;
+            height: 680px;
+            border-radius: 50%;
+            filter: blur(110px);
+            opacity: .28;
+            z-index: 0;
             pointer-events: none;
+        }
+
+        .discover-top-band::before {
+            background: #1d3b6a;
+            top: -140px;
+            left: -160px;
+        }
+
+        .discover-top-band::after {
+            background: #432371;
+            bottom: -200px;
+            right: -160px;
+        }
+
+        /* Ensure content layers above the decorative background */
+        .discover-top-band>.container {
+            position: relative;
+            z-index: 1;
         }
 
         .heading-wrap h1 {

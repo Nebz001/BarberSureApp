@@ -314,7 +314,7 @@ foreach ($shops as $s) {
 
         <?php if (!$shops): ?>
             <div class="card" style="padding:1rem;">
-                <p style="margin:0;font-size:.7rem;">No shops registered yet. <a href="manage_shop.php" style="color:#f59e0b;">Create your first shop</a> to receive inquiries.</p>
+                <p style="margin:0;font-size:.7rem;">No shops registered yet. <a href="manage_shop.php" style="color:#3b82f6;">Create your first shop</a> to receive inquiries.</p>
             </div>
         <?php else: ?>
             <section class="msg-layout">

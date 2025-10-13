@@ -73,9 +73,9 @@ function render_stars($avg)
     $half = ($avg - $full) >= 0.5 ? 1 : 0;
     $empty = 5 - $full - $half;
     $out = '';
-    for ($i = 0; $i < $full; $i++) $out .= '<i class="bi bi-star-fill" style="color:#fbbf24"></i>';
-    if ($half) $out .= '<i class="bi bi-star-half" style="color:#fbbf24"></i>';
-    for ($i = 0; $i < $empty; $i++) $out .= '<i class="bi bi-star" style="color:#fbbf24"></i>';
+    for ($i = 0; $i < $full; $i++) $out .= '<i class="bi bi-star-fill" style="color:#0ea5e9"></i>';
+    if ($half) $out .= '<i class="bi bi-star-half" style="color:#0ea5e9"></i>';
+    for ($i = 0; $i < $empty; $i++) $out .= '<i class="bi bi-star" style="color:#0ea5e9"></i>';
     return $out . '<span class="ms-2 small text-muted">' . number_format((float)$avg, 1) . '</span>';
 }
 
@@ -135,7 +135,7 @@ function fmt_time_pretty($t)
         }
 
         .svc-price {
-            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            background: linear-gradient(135deg, #0ea5e9, #3b82f6);
             color: #111;
             font-size: .7rem;
             font-weight: 800;
@@ -151,7 +151,7 @@ function fmt_time_pretty($t)
         }
 
         .cta-book {
-            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            background: linear-gradient(135deg, #0ea5e9, #3b82f6);
             border: 0;
             font-weight: 700;
             letter-spacing: .4px;
@@ -296,7 +296,7 @@ function fmt_time_pretty($t)
                                 <div class="d-flex flex-column gap-2">
                                     <?php if (!empty($shop['address'])): ?>
                                         <div class="d-flex align-items-center gap-2 muted">
-                                            <i class="bi bi-geo-alt-fill" style="color:#fbbf24"></i>
+                                            <i class="bi bi-geo-alt-fill" style="color:#0ea5e9"></i>
                                             <span><?= e($shop['address']) ?><?= !empty($shop['city']) ? ', ' . e($shop['city']) : '' ?></span>
                                         </div>
                                     <?php endif; ?>
@@ -304,19 +304,19 @@ function fmt_time_pretty($t)
                                     $closeT = $shop['close_time'] ?? null;
                                     if (!empty($openT) && !empty($closeT)): ?>
                                         <div class="d-flex align-items-center gap-2 muted">
-                                            <i class="bi bi-clock-fill" style="color:#fbbf24"></i>
+                                            <i class="bi bi-clock-fill" style="color:#0ea5e9"></i>
                                             <span>Open: <?= e(fmt_time_pretty($openT)) ?> &ndash; <?= e(fmt_time_pretty($closeT)) ?></span>
                                         </div>
                                     <?php endif; ?>
                                     <?php if (!empty($shop['owner_name'])): ?>
                                         <div class="d-flex align-items-center gap-2 muted">
-                                            <i class="bi bi-person-badge-fill" style="color:#fbbf24"></i>
+                                            <i class="bi bi-person-badge-fill" style="color:#0ea5e9"></i>
                                             <span>Owner: <?= e($shop['owner_name']) ?></span>
                                         </div>
                                     <?php endif; ?>
                                     <?php if (!empty($shop['shop_phone'])): ?>
                                         <div class="d-flex align-items-center gap-2 muted">
-                                            <i class="bi bi-telephone-fill" style="color:#fbbf24"></i>
+                                            <i class="bi bi-telephone-fill" style="color:#0ea5e9"></i>
                                             <span><?= e($shop['shop_phone']) ?></span>
                                         </div>
                                     <?php endif; ?>
@@ -352,7 +352,7 @@ function fmt_time_pretty($t)
                                     <div class="map-actions">
                                         <small class="text-muted">Powered by Google Maps</small>
                                         <a class="btn btn-sm btn-directions" target="_blank" rel="noopener" href="<?= e($directionsHref) ?>">
-                                            <i class="bi bi-geo-alt-fill me-1" style="color:#fbbf24"></i> Get Directions
+                                            <i class="bi bi-geo-alt-fill me-1" style="color:#0ea5e9"></i> Get Directions
                                         </a>
                                     </div>
                                 </div>

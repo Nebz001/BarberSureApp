@@ -187,7 +187,7 @@ if (!$isVerified) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         .rating-star {
-            color: #fbbf24;
+            color: #60a5fa;
             font-size: .6rem;
         }
 
@@ -199,7 +199,7 @@ if (!$isVerified) {
         }
 
         .spark span {
-            background: linear-gradient(180deg, #f59e0b, #b45309);
+            background: linear-gradient(180deg, #3b82f6, #1e40af);
         }
 
         .truncate {
@@ -360,32 +360,32 @@ if (!$isVerified) {
                     align-items: center;
                     justify-content: center;
                     border-radius: 14px;
-                    background: linear-gradient(135deg, #4a2d12, #2d1a0d);
-                    box-shadow: 0 0 0 1px #704015 inset, 0 4px 10px -4px #000;
+                    background: linear-gradient(135deg, #0b1a2a, #0a1420);
+                    box-shadow: 0 0 0 1px #1f3b64 inset, 0 4px 10px -4px #000;
                     transition: transform .25s ease, box-shadow .25s ease;
                 }
 
                 .locked-feature:hover .locked-icon {
                     transform: translateY(-3px);
-                    box-shadow: 0 0 0 1px #8b5a23 inset, 0 6px 14px -6px #000;
+                    box-shadow: 0 0 0 1px #2a5fad inset, 0 6px 14px -6px #000;
                 }
 
                 .locked-feature:focus-within .locked-icon {
-                    outline: 2px solid #f59e0b;
+                    outline: 2px solid #3b82f6;
                     outline-offset: 2px;
                 }
 
                 .locked-icon svg {
                     width: 22px;
                     height: 22px;
-                    stroke: #fcd34d;
+                    stroke: #93c5fd;
                     stroke-width: 1.5;
                     fill: none;
                 }
 
                 .cta-banner {
-                    background: linear-gradient(135deg, #3a230d, #2a1707);
-                    border: 1px solid #5c3b16;
+                    background: linear-gradient(135deg, #0b1624, #0a1120);
+                    border: 1px solid #1d3557;
                     padding: 1.2rem 1.25rem 1.3rem;
                     border-radius: 14px;
                     margin: 0 0 1.4rem;
@@ -399,7 +399,7 @@ if (!$isVerified) {
                     font-size: 1.45rem;
                     font-weight: 700;
                     letter-spacing: .5px;
-                    background: linear-gradient(90deg, #fff3c4, #fbbf24, #f59e0b);
+                    background: linear-gradient(90deg, #bfdbfe, #93c5fd, #60a5fa);
                     -webkit-background-clip: text;
                     background-clip: text;
                     color: transparent;
@@ -409,12 +409,12 @@ if (!$isVerified) {
                     margin: 0;
                     font-size: .82rem;
                     line-height: 1.6;
-                    color: #e8d7c2;
+                    color: #cfe3ff;
                 }
 
                 .btn-accent {
-                    background: linear-gradient(90deg, #f59e0b, #d97706);
-                    color: #2d1400;
+                    background: linear-gradient(90deg, #3b82f6, #2563eb);
+                    color: #eaf2ff;
                     font-weight: 700;
                     border: 0;
                     padding: .7rem 1.2rem;
@@ -425,7 +425,7 @@ if (!$isVerified) {
                     display: inline-flex;
                     align-items: center;
                     gap: .45rem;
-                    box-shadow: 0 0 0 1px #b45309 inset, 0 2px 6px -2px #000, 0 6px 14px -4px #00000066;
+                    box-shadow: 0 0 0 1px #1d4ed8 inset, 0 2px 6px -2px #000, 0 6px 14px -4px #00000066;
                 }
 
                 .btn-accent:hover {
@@ -433,9 +433,9 @@ if (!$isVerified) {
                 }
 
                 .btn-outline {
-                    background: #2a1a0d;
-                    border: 1px solid #7a4a16;
-                    color: #f8e7d2;
+                    background: #0a1a34;
+                    border: 1px solid #1e3a8a;
+                    color: #e5f0ff;
                     padding: .65rem 1.05rem;
                     border-radius: 10px;
                     font-size: .72rem;
@@ -444,7 +444,7 @@ if (!$isVerified) {
                 }
 
                 .btn-outline:hover {
-                    background: #3a240f;
+                    background: #0d2350;
                 }
 
                 .lim-grid {
@@ -461,15 +461,15 @@ if (!$isVerified) {
                 }
 
                 .shop-box {
-                    background: radial-gradient(circle at 25% 20%, #3a210d 0%, #2b190c 55%, #231207 100%);
-                    border: 1px solid #6a3b16;
+                    background: radial-gradient(circle at 25% 20%, #0d2760 0%, #0a1e47 55%, #071735 100%);
+                    border: 1px solid #1e3a8a;
                     padding: 1.3rem 1.25rem 1.35rem;
                     border-radius: 18px;
                     display: flex;
                     flex-direction: column;
                     gap: .9rem;
                     position: relative;
-                    box-shadow: 0 4px 10px -4px #000, 0 0 0 1px #834919 inset;
+                    box-shadow: 0 4px 10px -4px #000, 0 0 0 1px #1e3a8a inset;
                 }
 
                 .shop-box:before {
@@ -477,7 +477,7 @@ if (!$isVerified) {
                     position: absolute;
                     inset: 0;
                     border-radius: inherit;
-                    background: linear-gradient(140deg, #f59e0b22, #0000 60%);
+                    background: linear-gradient(140deg, #3b82f622, #0000 60%);
                     pointer-events: none;
                 }
 
@@ -494,7 +494,7 @@ if (!$isVerified) {
                     font-size: 1.25rem;
                     letter-spacing: .6px;
                     font-weight: 700;
-                    background: linear-gradient(90deg, #ffe9b8, #fcd34d, #f59e0b);
+                    background: linear-gradient(90deg, #bfdbfe, #93c5fd, #60a5fa);
                     -webkit-background-clip: text;
                     background-clip: text;
                     color: transparent;
@@ -503,7 +503,7 @@ if (!$isVerified) {
                 .shop-meta {
                     font-size: .82rem;
                     line-height: 1.55;
-                    color: #f1d7b9;
+                    color: #cfe3ff;
                     display: grid;
                     gap: .3rem;
                 }
@@ -523,15 +523,15 @@ if (!$isVerified) {
                     letter-spacing: .7px;
                     padding: .4rem .7rem;
                     border-radius: 30px;
-                    background: #f59e0b1a;
-                    border: 1px solid #f59e0b40;
-                    color: #fcd34d;
+                    background: #1e3a8a1a;
+                    border: 1px solid #1e3a8a40;
+                    color: #bfdbfe;
                 }
 
                 .status-badge svg {
                     width: 13px;
                     height: 13px;
-                    stroke: #fbbf24;
+                    stroke: #93c5fd;
                     stroke-width: 1.6;
                     fill: none;
                 }
@@ -542,7 +542,7 @@ if (!$isVerified) {
                     gap: .45rem;
                     font-size: .63rem;
                     letter-spacing: .35px;
-                    color: #e8d2ba;
+                    color: #cfe3ff;
                     list-style: none;
                     padding: 0;
                 }
@@ -560,15 +560,15 @@ if (!$isVerified) {
                     align-items: center;
                     justify-content: center;
                     border-radius: 4px;
-                    background: #3f260f;
-                    border: 1px solid #714017;
+                    background: #0a1e47;
+                    border: 1px solid #1e3a8a;
                     flex-shrink: 0;
                 }
 
                 .verify-steps li span.icon svg {
                     width: 10px;
                     height: 10px;
-                    stroke: #fcd34d;
+                    stroke: #93c5fd;
                     stroke-width: 1.8;
                     fill: none;
                 }
@@ -580,18 +580,18 @@ if (!$isVerified) {
                 }
 
                 .svc-tags span {
-                    background: #3d240e;
-                    border: 1px solid #714017;
+                    background: #0a1e47;
+                    border: 1px solid #1e3a8a;
                     font-size: .6rem;
                     padding: .3rem .55rem;
                     border-radius: 30px;
-                    color: #f1d7b2;
+                    color: #dbeafe;
                     letter-spacing: .55px;
                 }
 
                 .why-box {
-                    background: #2d1a0d;
-                    border: 1px solid #5d3615;
+                    background: #0b224b;
+                    border: 1px solid #1e3a8a;
                     padding: 1.15rem 1.15rem 1.25rem;
                     border-radius: 16px;
                     display: flex;
@@ -606,7 +606,7 @@ if (!$isVerified) {
                     gap: .65rem;
                     font-size: .8rem;
                     line-height: 1.5;
-                    color: #f1ddc7;
+                    color: #cfe3ff;
                 }
 
                 .why-box li {
@@ -614,8 +614,8 @@ if (!$isVerified) {
                 }
 
                 .highlight-cta {
-                    background: linear-gradient(135deg, #4a2d12, #2d1a0d);
-                    border: 1px solid #7a4719;
+                    background: linear-gradient(135deg, #0b224b, #0a1630);
+                    border: 1px solid #1e3a8a;
                     padding: 1.25rem 1.4rem 1.45rem;
                     border-radius: 20px;
                     display: flex;
@@ -635,9 +635,9 @@ if (!$isVerified) {
                     font-size: .58rem;
                     font-weight: 700;
                     letter-spacing: .6px;
-                    color: #fcd34d;
-                    background: #f59e0b1a;
-                    border: 1px solid #f59e0b40;
+                    color: #bfdbfe;
+                    background: #1e3a8a1a;
+                    border: 1px solid #1e3a8a40;
                     padding: .25rem .55rem;
                     border-radius: 30px;
                 }
@@ -700,7 +700,8 @@ if (!$isVerified) {
                         <div class="shop-meta">
                             <strong><?= e($limShop['shop_name']) ?></strong>
                             <span><?= e($limShop['city']) ?></span>
-                            <?php if ($limShop['open_time'] && $limShop['close_time']): ?><span>Hours: <em style="font-style:normal;color:#ffd166;"><?= e($limShop['open_time']) ?> – <?= e($limShop['close_time']) ?></em></span><?php endif; ?>
+                            <?php if ($limShop['open_time'] && $limShop['close_time']): ?><span>Hours: <em style="font-style:normal;color:#93c5fd;">
+                                        <?= e($limShop['open_time']) ?> – <?= e($limShop['close_time']) ?></em></span><?php endif; ?>
                             <?php if ($limServices): ?><span>Sample Services (<?= count($limServices) ?>)</span><?php endif; ?>
                         </div>
                         <?php if ($limServices): ?>
@@ -731,51 +732,51 @@ if (!$isVerified) {
                     </div>
                 </div><!-- end shop-box -->
                 <div class="why-box">
-                    <h2 style="margin:0;font-size:1.2rem;letter-spacing:.5px;background:linear-gradient(90deg,#fcd34d,#fbbf24,#f59e0b);-webkit-background-clip:text;background-clip:text;color:transparent;">Why Subscribe?</h2>
+                    <h2 style="margin:0;font-size:1.2rem;letter-spacing:.5px;background:linear-gradient(90deg,#bfdbfe,#93c5fd,#60a5fa);-webkit-background-clip:text;background-clip:text;color:transparent;">Why Subscribe?</h2>
                     <ul>
                         <li>📈 Get more visibility — appear in customer search results.</li>
                         <li>🔔 Instant booking notifications.</li>
                         <li>📊 Insights into your customers and shop performance.</li>
                         <li>🌟 Priority placement in listings.</li>
                     </ul>
-                    <div style="background:linear-gradient(135deg,#4a2d12,#2d1a0d);border:1px solid #7a4719;padding:.7rem .85rem;border-radius:12px;font-size:.72rem;color:#f9e7ce;box-shadow:0 0 0 1px #8b5a23 inset,0 4px 10px -6px #000;">Shops with a subscription get <strong style="color:#ffd166;">2x more bookings!</strong></div>
+                    <div style="background:linear-gradient(135deg,#0b224b,#0a1630);border:1px solid #1e3a8a;padding:.7rem .85rem;border-radius:12px;font-size:.72rem;color:#dbeafe;box-shadow:0 0 0 1px #1e3a8a inset,0 4px 10px -6px #000;">Shops with a subscription get <strong style="color:#93c5fd;">2x more bookings!</strong></div>
                     <div style="margin:1rem 0 0;display:grid;gap:.9rem;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));align-items:stretch;">
-                        <div style="background:#3a230d;border:1px solid #7a4719;border-radius:16px;padding:.95rem .95rem 1rem;display:flex;flex-direction:column;gap:.6rem;box-shadow:0 0 0 1px #8b5523 inset,0 2px 8px -4px #000;">
+                        <div style="background:linear-gradient(135deg,#0c2147,#091a34);border:1px solid #1e3a8a;border-radius:16px;padding:.95rem .95rem 1rem;display:flex;flex-direction:column;gap:.6rem;box-shadow:0 0 0 1px #1e3a8a inset,0 2px 8px -4px #000;">
                             <div style="display:flex;align-items:center;gap:.6rem;">
-                                <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#4d2d12,#2d1a0d);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px #90551f inset;">
-                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="#fcd34d" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#0d2760,#0a1e47);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px #1e3a8a inset;">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="#93c5fd" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
                                         <rect x="3" y="5" width="18" height="16" rx="2" ry="2" />
                                         <line x1="3" y1="10" x2="21" y2="10" />
                                         <line x1="8" y1="3" x2="8" y2="7" />
                                         <line x1="16" y1="3" x2="16" y2="7" />
                                     </svg>
                                 </div>
-                                <h3 style="margin:0;font-size:.9rem;letter-spacing:.45px;color:#ffe3b0;font-weight:600;">Bookings Calendar</h3>
+                                <h3 style="margin:0;font-size:.9rem;letter-spacing:.45px;color:#dbeafe;font-weight:600;">Bookings Calendar</h3>
                             </div>
-                            <p style="margin:0;font-size:.68rem;line-height:1.45;color:#d8c2aa;">View and manage customer bookings — <strong style="color:#ffd166;">unlock by subscribing.</strong></p>
+                            <p style="margin:0;font-size:.68rem;line-height:1.45;color:#cfe3ff;">View and manage customer bookings — <strong style="color:#93c5fd;">unlock by subscribing.</strong></p>
                         </div>
-                        <div style="background:#3a230d;border:1px solid #7a4719;border-radius:16px;padding:.95rem .95rem 1rem;display:flex;flex-direction:column;gap:.6rem;box-shadow:0 0 0 1px #8b5523 inset,0 2px 8px -4px #000;">
+                        <div style="background:linear-gradient(135deg,#0c2147,#091a34);border:1px solid #1e3a8a;border-radius:16px;padding:.95rem .95rem 1rem;display:flex;flex-direction:column;gap:.6rem;box-shadow:0 0 0 1px #1e3a8a inset,0 2px 8px -4px #000;">
                             <div style="display:flex;align-items:center;gap:.6rem;">
-                                <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#4d2d12,#2d1a0d);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px #90551f inset;">
-                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="#fcd34d" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#0d2760,#0a1e47);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px #1e3a8a inset;">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="#93c5fd" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M3 12h4l3 8 4-16 3 8h4" />
                                     </svg>
                                 </div>
-                                <h3 style="margin:0;font-size:.9rem;letter-spacing:.45px;color:#ffe3b0;font-weight:600;">Customer Insights</h3>
+                                <h3 style="margin:0;font-size:.9rem;letter-spacing:.45px;color:#dbeafe;font-weight:600;">Customer Insights</h3>
                             </div>
-                            <p style="margin:0;font-size:.68rem;line-height:1.45;color:#d8c2aa;">Track popular services, repeat customers, peak hours — <strong style="color:#ffd166;">subscription only.</strong></p>
+                            <p style="margin:0;font-size:.68rem;line-height:1.45;color:#cfe3ff;">Track popular services, repeat customers, peak hours — <strong style="color:#93c5fd;">subscription only.</strong></p>
                         </div>
-                        <div style="background:#3a230d;border:1px solid #7a4719;border-radius:16px;padding:.95rem .95rem 1rem;display:flex;flex-direction:column;gap:.6rem;box-shadow:0 0 0 1px #8b5523 inset,0 2px 8px -4px #000;">
+                        <div style="background:linear-gradient(135deg,#0c2147,#091a34);border:1px solid #1e3a8a;border-radius:16px;padding:.95rem .95rem 1rem;display:flex;flex-direction:column;gap:.6rem;box-shadow:0 0 0 1px #1e3a8a inset,0 2px 8px -4px #000;">
                             <div style="display:flex;align-items:center;gap:.6rem;">
-                                <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#4d2d12,#2d1a0d);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px #90551f inset;">
-                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="#fcd34d" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#0d2760,#0a1e47);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px #1e3a8a inset;">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="#93c5fd" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
                                         <path d="M13.73 21a2 2 0 01-3.46 0" />
                                     </svg>
                                 </div>
-                                <h3 style="margin:0;font-size:.9rem;letter-spacing:.45px;color:#ffe3b0;font-weight:600;">Notifications</h3>
+                                <h3 style="margin:0;font-size:.9rem;letter-spacing:.45px;color:#dbeafe;font-weight:600;">Notifications</h3>
                             </div>
-                            <p style="margin:0;font-size:.68rem;line-height:1.45;color:#d8c2aa;">Instant SMS & email alerts for new bookings — <strong style="color:#ffd166;">subscribe to enable.</strong></p>
+                            <p style="margin:0;font-size:.68rem;line-height:1.45;color:#cfe3ff;">Instant SMS & email alerts for new bookings — <strong style="color:#93c5fd;">subscribe to enable.</strong></p>
                         </div>
                     </div>
                 </div><!-- end why-box -->
@@ -786,36 +787,36 @@ if (!$isVerified) {
                     <p style="margin:0;font-size:.9rem;color:#e8d2ba;font-weight:500;">Choose Your Plan</p>
                 </div>
                 <div style="display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));">
-                    <div style="background:linear-gradient(140deg,#3a230d,#2b190c 55%,#241307);border:1px solid #6f3d16;border-radius:14px;padding:1.1rem 1.05rem 1.15rem;display:flex;flex-direction:column;gap:.65rem;position:relative;box-shadow:0 2px 6px -2px rgba(0,0,0,.45),0 0 0 1px #7e461a inset;">
-                        <h4 style="margin:0;font-size:1.05rem;letter-spacing:.4px;background:linear-gradient(90deg,#ffe9b8,#fcd34d,#f59e0b);-webkit-background-clip:text;background-clip:text;color:transparent;">Monthly Plan</h4>
-                        <div style="font-size:1.35rem;font-weight:600;color:#ffdca3;">💳 ₱499 <span style="font-size:.7rem;font-weight:600;color:#f5c565;letter-spacing:.6px;">/ MONTH</span></div>
-                        <ul style="list-style:none;margin:0;padding:0;font-size:.72rem;line-height:1.25rem;color:#e8d2ba;letter-spacing:.35px;">
+                    <div style="background:linear-gradient(140deg,#0b224b,#081a34 55%,#071328);border:1px solid #1e3a8a;border-radius:14px;padding:1.1rem 1.05rem 1.15rem;display:flex;flex-direction:column;gap:.65rem;position:relative;box-shadow:0 2px 6px -2px rgba(0,0,0,.45),0 0 0 1px #1e3a8a inset;">
+                        <h4 style="margin:0;font-size:1.05rem;letter-spacing:.4px;background:linear-gradient(90deg,#bfdbfe,#93c5fd,#60a5fa);-webkit-background-clip:text;background-clip:text;color:transparent;">Monthly Plan</h4>
+                        <div style="font-size:1.35rem;font-weight:600;color:#cfe3ff;">💳 ₱499 <span style="font-size:.7rem;font-weight:600;color:#93c5fd;letter-spacing:.6px;">/ MONTH</span></div>
+                        <ul style="list-style:none;margin:0;padding:0;font-size:.72rem;line-height:1.25rem;color:#cfe3ff;letter-spacing:.35px;">
                             <li>Cancel anytime</li>
                             <li>Full access to bookings</li>
                             <li>Notifications & insights</li>
                         </ul>
                         <a href="payments.php?plan=monthly" class="btn-accent" style="margin-top:auto;text-align:center;">Select</a>
                     </div>
-                    <div style="background:radial-gradient(circle at 25% 18%,#4d2d12 0%,#3a210d 55%,#2b1709 100%);border:1px solid #9a5a1d;border-radius:14px;padding:1.1rem 1.05rem 1.15rem;display:flex;flex-direction:column;gap:.65rem;position:relative;box-shadow:0 4px 12px -4px #000,0 0 0 1px #a76728 inset;">
-                        <div style="position:absolute;top:-11px;right:10px;background:linear-gradient(90deg,#fbbf24,#f59e0b);color:#2d1400;font-size:.6rem;padding:.35rem .6rem;border-radius:8px;letter-spacing:.65px;font-weight:700;box-shadow:0 2px 6px -2px #000;">BEST VALUE</div>
-                        <h4 style="margin:0;font-size:1.05rem;letter-spacing:.4px;background:linear-gradient(90deg,#ffe9b8,#fcd34d,#f59e0b);-webkit-background-clip:text;background-clip:text;color:transparent;">Yearly Plan</h4>
-                        <div style="font-size:1.35rem;font-weight:600;color:#ffdca3;">💳 ₱4,999 <span style="font-size:.7rem;font-weight:600;color:#f5c565;letter-spacing:.6px;">/ YEAR</span></div>
-                        <div style="font-size:.62rem;color:#ffdd9b;margin-top:-.2rem;letter-spacing:.45px;">Equivalent to ₱416 / month (save ~17%)</div>
-                        <ul style="list-style:none;margin:0;padding:0;font-size:.72rem;line-height:1.25rem;color:#eed9c3;letter-spacing:.35px;">
+                    <div style="background:radial-gradient(circle at 25% 18%,#0d2760 0%,#0a1e47 55%,#071735 100%);border:1px solid #1e3a8a;border-radius:14px;padding:1.1rem 1.05rem 1.15rem;display:flex;flex-direction:column;gap:.65rem;position:relative;box-shadow:0 4px 12px -4px #000,0 0 0 1px #1e3a8a inset;">
+                        <div style="position:absolute;top:-11px;right:10px;background:linear-gradient(90deg,#3b82f6,#2563eb);color:#fff;font-size:.6rem;padding:.35rem .6rem;border-radius:8px;letter-spacing:.65px;font-weight:700;box-shadow:0 2px 6px -2px #000;">BEST VALUE</div>
+                        <h4 style="margin:0;font-size:1.05rem;letter-spacing:.4px;background:linear-gradient(90deg,#bfdbfe,#93c5fd,#60a5fa);-webkit-background-clip:text;background-clip:text;color:transparent;">Yearly Plan</h4>
+                        <div style="font-size:1.35rem;font-weight:600;color:#cfe3ff;">💳 ₱4,999 <span style="font-size:.7rem;font-weight:600;color:#93c5fd;letter-spacing:.6px;">/ YEAR</span></div>
+                        <div style="font-size:.62rem;color:#93c5fd;margin-top:-.2rem;letter-spacing:.45px;">Equivalent to ₱416 / month (save ~17%)</div>
+                        <ul style="list-style:none;margin:0;padding:0;font-size:.72rem;line-height:1.25rem;color:#cfe3ff;letter-spacing:.35px;">
                             <li>Priority placement in search</li>
                             <li>Full access & insights</li>
                             <li>Exclusive seasonal promotions</li>
                         </ul>
-                        <a href="payments.php?plan=yearly" class="btn-accent" style="margin-top:auto;text-align:center;background:linear-gradient(90deg,#f59e0b,#d97706);border-color:#f59e0b;">Select</a>
+                        <a href="payments.php?plan=yearly" class="btn-accent" style="margin-top:auto;text-align:center;">Select</a>
                     </div>
                 </div>
             </div>
             <!-- Document Upload Modal -->
             <div id="docUploadModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);">
-                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#1b120a;border:1px solid #5d3615;border-radius:18px;padding:1.4rem 1.35rem 1.55rem;max-width:640px;width:92%;box-shadow:0 8px 40px -10px #000,0 0 0 1px #744418 inset;display:flex;flex-direction:column;gap:1rem;">
+                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#0b1220;border:1px solid #1e3a8a;border-radius:18px;padding:1.4rem 1.35rem 1.55rem;max-width:640px;width:92%;box-shadow:0 8px 40px -10px #000,0 0 0 1px #1e3a8a inset;display:flex;flex-direction:column;gap:1rem;">
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">
-                        <h3 style="margin:0;font-size:1.1rem;letter-spacing:.5px;background:linear-gradient(90deg,#ffe9b8,#fcd34d,#f59e0b);-webkit-background-clip:text;background-clip:text;color:transparent;">Submit Verification Documents</h3>
-                        <button type="button" onclick="closeDocModal()" style="background:#2d1a0d;border:1px solid #704218;color:#f8e7d2;font-size:.65rem;padding:.4rem .65rem;border-radius:8px;cursor:pointer;">Close</button>
+                        <h3 style="margin:0;font-size:1.1rem;letter-spacing:.5px;background:linear-gradient(90deg,#bfdbfe,#93c5fd,#60a5fa);-webkit-background-clip:text;background-clip:text;color:transparent;">Submit Verification Documents</h3>
+                        <button type="button" onclick="closeDocModal()" style="background:#0a1a34;border:1px solid #1e3a8a;color:#e5f0ff;font-size:.65rem;padding:.4rem .65rem;border-radius:8px;cursor:pointer;">Close</button>
                     </div>
                     <?php if (isset($docErrors) && $docErrors): ?>
                         <div style="background:#3a1e10;border:1px solid #a13333;color:#fca5a5;padding:.6rem .75rem;border-radius:10px;font-size:.63rem;line-height:1.4;">

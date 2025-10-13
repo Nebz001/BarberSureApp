@@ -418,7 +418,7 @@ function format_currency($amount)
         }
 
         .status-pending {
-            background: #f59e0b;
+            background: #3b82f6;
         }
 
         .status-failed {
@@ -661,7 +661,7 @@ function format_currency($amount)
                     <h3 style="margin:0 0 .75rem;font-size:.9rem;">Account Status</h3>
 
                     <?php if (!($user['is_verified'] ?? 0)): ?>
-                        <div style="background:#3b2f12;border:1px solid #92400e;color:#fcd34d;padding:.8rem;border-radius:8px;font-size:.65rem;margin:.5rem 0;">
+                        <div style="background:#0b224b;border:1px solid #1e3a8a;color:#dbeafe;padding:.8rem;border-radius:8px;font-size:.65rem;margin:.5rem 0;box-shadow:0 0 0 1px #1e3a8a inset;">
                             <strong>⚠️ Account Not Verified</strong><br>
                             Your account is pending verification. Some features may be limited until verification is complete.
                         </div>

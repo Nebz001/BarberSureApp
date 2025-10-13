@@ -7,13 +7,13 @@
     --o-border-soft: #1f2c38;
     --o-text: #e4ebf2;
     --o-text-soft: #97a3af;
-    --o-accent: #f59e0b; /* amber */
-    --o-accent-alt: #fbbf24; /* gold secondary */
+    --o-accent: #0ea5e9; /* sky-500 */
+    --o-accent-alt: #3b82f6; /* blue-500 */
     --o-danger: #ef4444;
     --o-success: #10b981;
-    --o-warning: #f59e0b;
-    --o-info: #fbbf24;
-    --o-grad-accent: linear-gradient(135deg, #f59e0b, #fbbf24);
+    --o-warning: #f59e0b; /* keep semantics amber */
+    --o-info: #38bdf8; /* info tilt toward cyan */
+    --o-grad-accent: linear-gradient(135deg, #0ea5e9, #3b82f6);
     --o-radius-sm: 6px;
     --o-radius: 14px;
     --o-radius-lg: 22px;
@@ -301,8 +301,9 @@ main.owner-main {
     color: var(--o-text-soft);
 }
 .badge-status-pending {
-    background: #3b2f12;
-    color: #fbbf24;
+    background: #1e3a8a1a;
+    color: #bfdbfe;
+    border-color: #1e3a8a40;
 }
 .badge-status-approved {
     background: #062e2b;
@@ -347,7 +348,7 @@ main.owner-main {
 }
 .btn-primary {
     --btn-bg: var(--o-grad-accent);
-    --btn-border: #d97706;
+    --btn-border: #2563eb;
     color: #fff;
 }
 .btn-primary:hover {
@@ -386,7 +387,7 @@ main.owner-main {
 }
 .spark span {
     flex: 1;
-    background: linear-gradient(180deg, #f59e0b, #b45309);
+    background: linear-gradient(180deg, #3b82f6, #1e40af);
     border-radius: 2px;
     display: block;
     min-width: 2px;

@@ -298,6 +298,7 @@ function format_appointment_time($datetime)
 
         .badge-status-pending {
             background: #b453091a;
+            /* keep amber to convey pending */
             color: #f59e0b;
             border: 1px solid #f59e0b33;
         }
@@ -342,13 +343,13 @@ function format_appointment_time($datetime)
         }
 
         .btn-complete {
-            background: #f59e0b;
-            color: #1f2937;
-            border: 1px solid #f59e0b;
+            background: #3b82f6;
+            color: #eaf2ff;
+            border: 1px solid #3b82f6;
         }
 
         .btn-complete:hover {
-            background: #d97706;
+            background: #2563eb;
         }
 
         .btn-cancel {
@@ -532,7 +533,7 @@ function format_appointment_time($datetime)
                     <tbody>
                         <?php if (!$appointments): ?>
                             <tr>
-                                <td colspan="6" style="padding:.9rem .6rem;color:#6e859c;font-size:.6rem;text-align:center;">No appointments found with current filters. <a href="bookings.php" style="color:#f59e0b;">View all</a></td>
+                                <td colspan="6" style="padding:.9rem .6rem;color:#6e859c;font-size:.6rem;text-align:center;">No appointments found with current filters. <a href="bookings.php" style="color:#3b82f6;">View all</a></td>
                             </tr>
                             <?php else: foreach ($appointments as $appt): ?>
                                 <tr>

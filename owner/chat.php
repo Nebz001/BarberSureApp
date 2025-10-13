@@ -58,9 +58,9 @@ $channel = isset($_GET['c']) && preg_match('/^[A-Za-z0-9_-]{6,60}$/', $_GET['c']
         }
 
         .chat-line.chat-customer .chat-text {
-            background: #3b2f12;
-            color: #fbbf24;
-            border: 1px solid #926b1b;
+            background: #0e1a28;
+            color: #cfe3ff;
+            border: 1px solid #1e3a5f;
         }
 
         .chat-text {

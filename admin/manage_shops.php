@@ -313,6 +313,7 @@ include __DIR__ . '/partials/layout_start.php';
 
     .shop-table .badge.bg-warning {
         background: #d97706 !important;
+        /* keep warning amber to convey pending */
     }
 
     .shop-table .badge.bg-secondary {

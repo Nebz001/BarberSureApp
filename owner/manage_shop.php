@@ -369,9 +369,9 @@ if ($shop) {
         }
 
         .badge-status-pending {
-            background: #b453091a;
-            color: #f59e0b;
-            border: 1px solid #f59e0b33;
+            background: #1e3a8a1a;
+            color: #bfdbfe;
+            border: 1px solid #1e3a8a40;
         }
 
         .notice-list,
@@ -484,7 +484,7 @@ if ($shop) {
             </div>
         <?php endif; ?>
         <?php if ($shop && $shop['status'] === 'pending'): ?>
-            <div style="background:#3b2f14;border:1px solid #94620d;color:#fcd34d;padding:.65rem .8rem;border-radius:10px;font-size:.63rem;margin:0 0 1rem;display:flex;gap:.6rem;align-items:flex-start;">
+            <div style="background:#0b224b;border:1px solid #1e3a8a;color:#dbeafe;padding:.65rem .8rem;border-radius:10px;font-size:.63rem;margin:0 0 1rem;display:flex;gap:.6rem;align-items:flex-start;box-shadow:0 0 0 1px #1e3a8a inset;">
                 <strong style="font-weight:600;letter-spacing:.5px;font-size:.6rem;">PENDING REVIEW</strong>
                 <span style="flex:1;line-height:1.4;">Your shop is awaiting admin approval. You can already prepare services, but customers may not see it until approved.</span>
             </div>

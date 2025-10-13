@@ -29,8 +29,10 @@ $title = $title ?? 'Admin • BarberSure';
             --adm-card-bg: #1e2732;
             --adm-text: #d1d5db;
             --adm-text-soft: #94a3b8;
-            --adm-accent: #f59e0b;
-            --adm-accent-soft: #fbbf24;
+            --adm-accent: #0ea5e9;
+            /* sky-500 */
+            --adm-accent-soft: #3b82f6;
+            /* blue-500 */
             --adm-danger: #ef4444;
             --adm-warning: #f59e0b;
             --adm-success: #10b981;
@@ -225,7 +227,7 @@ $title = $title ?? 'Admin • BarberSure';
             background: var(--adm-bg-alt);
             color: var(--adm-text);
             border-color: var(--adm-accent);
-            box-shadow: 0 0 0 .15rem rgba(245, 158, 11, .25);
+            box-shadow: 0 0 0 .15rem rgba(14, 165, 233, .25);
         }
 
         .admin-shell {
@@ -276,7 +278,9 @@ $title = $title ?? 'Admin • BarberSure';
 
         .nav-pills .nav-link.active,
         .nav-pills .show>.nav-link {
-            background: var(--adm-accent);
+            background: linear-gradient(135deg, var(--adm-accent), var(--adm-accent-soft));
+            border: 0;
+            color: #fff;
         }
 
         /* Scrollbar (optional) */
@@ -367,7 +371,7 @@ $title = $title ?? 'Admin • BarberSure';
             height: 10px;
             border-radius: 50%;
             background: var(--adm-accent);
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, .25);
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, .25);
         }
 
         .admin-sidebar .nav {

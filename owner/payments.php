@@ -684,7 +684,7 @@ function format_payment_time($datetime)
                         <?php if (!$payments): ?>
                             <tr>
                                 <td colspan="6" style="padding:.9rem .6rem;color:#6e859c;font-size:.6rem;text-align:center;">
-                                    No payments found with current filters. <a href="payments.php" style="color:#f59e0b;">View all</a>
+                                    No payments found with current filters. <a href="payments.php" style="color:#3b82f6;">View all</a>
                                 </td>
                             </tr>
                             <?php else: foreach ($payments as $payment): ?>

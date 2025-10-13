@@ -223,10 +223,12 @@ $currentPage = 'home';
         }
 
         .pricing-badge {
-            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+            background: linear-gradient(90deg, #3b82f6, #2563eb);
+            color: #fff;
             font-size: .65rem;
             letter-spacing: 1px;
             font-weight: 600;
+            box-shadow: 0 0 0 1px #1e3a8a inset;
         }
 
         .plan-price {

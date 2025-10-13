@@ -383,7 +383,7 @@ include __DIR__ . '/partials/layout_start.php';
     }
 
     .user-table .badge.bg-primary {
-        background: #f59e0b !important;
+        background: #3b82f6 !important;
     }
 
     .user-table .badge.bg-info {

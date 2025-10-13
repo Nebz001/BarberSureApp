@@ -387,7 +387,7 @@ include __DIR__ . '/partials/sidebar.php';
                 datasets: [{
                     label: 'Revenue',
                     data: seriesRev,
-                    borderColor: '#F59E0B',
+                    borderColor: '#3B82F6',
                     backgroundColor: 'rgba(245,158,11,.08)',
                     tension: .4,
                     fill: true
@@ -433,7 +433,7 @@ include __DIR__ . '/partials/sidebar.php';
                 datasets: [{
                     label: 'New Users',
                     data: growthData,
-                    backgroundColor: '#F59E0B',
+                    backgroundColor: '#3B82F6',
                     borderRadius: 4
                 }]
             },
@@ -463,7 +463,7 @@ include __DIR__ . '/partials/sidebar.php';
             completed: apptStatus.completed || 0
         };
         const labels = ['Pending', 'Confirmed', 'Cancelled', 'Completed'];
-        const colors = ['#F59E0B', '#FBBF24', '#6B7280', '#10B981'];
+        const colors = ['#3B82F6', '#0EA5E9', '#6B7280', '#10B981'];
         const dataArr = [raw.pending, raw.confirmed, raw.cancelled, raw.completed];
         const total = dataArr.reduce((a, b) => a + b, 0);
         const legendEl = document.getElementById('apptStatusLegend');

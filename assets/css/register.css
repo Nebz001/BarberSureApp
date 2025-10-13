@@ -142,7 +142,7 @@
 
 .auth-form input[name="code"]:focus {
     border-color: var(--auth-accent);
-    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.15), 0 4px 12px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2), 0 4px 12px rgba(0, 0, 0, 0.4);
     transform: translateY(-1px);
 }
 
@@ -208,8 +208,8 @@
 
 .actions-inline .primary-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(255, 193, 7, 0.3);
-    filter: brightness(1.1);
+    box-shadow: 0 8px 25px rgba(14, 165, 233, 0.3);
+    filter: brightness(1.06);
 }
 
 /* Verification label styling */

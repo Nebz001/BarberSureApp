@@ -11,7 +11,7 @@ if (!isset($currentPage)) {
     <div class="container">
         <a class="navbar-brand d-flex align-items-center gap-2" href="index.php">
             <span class="d-inline-flex align-items-center justify-content-center rounded-3 gradient-border" style="width:38px;height:38px;background:#111823;">
-                <i class="bi bi-scissors" style="font-size:1.1rem;color:#fbbf24;"></i>
+                <i class="bi bi-scissors" style="font-size:1.1rem;color:#0ea5e9;"></i>
             </span>
             <span class="logo-text">Barber<span class="gradient-text">Sure</span></span>
         </a>

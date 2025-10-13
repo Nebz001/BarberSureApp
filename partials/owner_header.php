@@ -11,9 +11,9 @@ if (!isset($currentOwnerPage)) $currentOwnerPage = '';
     <div class="container-fluid" style="max-width:1320px;">
         <a class="navbar-brand d-flex align-items-center gap-2" href="dashboard.php">
             <span class="d-inline-flex align-items-center justify-content-center rounded-3" style="width:38px;height:38px;background:#111823;border:1px solid #23323f;">
-                <i class="bi bi-scissors" style="font-size:1.1rem;color:#fbbf24;"></i>
+                <i class="bi bi-scissors" style="font-size:1.1rem;color:#0ea5e9;"></i>
             </span>
-            <span class="fw-bold">Barber<span style="background:linear-gradient(135deg,#f59e0b,#fbbf24);-webkit-background-clip:text;background-clip:text;color:transparent;">Sure</span><span class="ms-2 badge text-bg-dark border border-warning-subtle" style="font-size:.55rem;letter-spacing:.5px;">OWNER</span></span>
+            <span class="fw-bold">Barber<span style="background:linear-gradient(135deg,#0ea5e9,#3b82f6);-webkit-background-clip:text;background-clip:text;color:transparent;">Sure</span><span class="ms-2 badge text-bg-dark border border-info-subtle" style="font-size:.55rem;letter-spacing:.5px;">OWNER</span></span>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#ownerNav" aria-controls="ownerNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>

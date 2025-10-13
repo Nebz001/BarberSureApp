@@ -1,9 +1,9 @@
 :root {
     --bs-body-bg: #0e1217;
     --bs-body-color: #e5e9ee;
-    /* Replace blue gradients with orange→gold */
-    --grad-primary: linear-gradient(135deg, #f59e0b, #fbbf24);
-    --grad-accent: linear-gradient(135deg, #fbbf24, #f59e0b);
+    /* Original blue gradients */
+    --grad-primary: linear-gradient(135deg, #0ea5e9, #3b82f6);
+    --grad-accent: linear-gradient(135deg, #3b82f6, #0ea5e9);
     --text-muted-color: #9aa5b1;
 }
 html,

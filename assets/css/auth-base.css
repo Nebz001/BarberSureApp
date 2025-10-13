@@ -11,16 +11,16 @@
     --auth-secondary: #181c22;
     --auth-surface-alt: #1f242b;
 
-    /* Accent: replace blue/indigo with orange–gold */
-    --auth-accent: #f59e0b;
-    --auth-accent-alt: #fbbf24;
-    --auth-accent-hover: #f59e0b;
+    /* Accent: blue theme */
+    --auth-accent: #0ea5e9; /* sky-500 */
+    --auth-accent-alt: #3b82f6; /* blue-500 */
+    --auth-accent-hover: #1ea6ff;
 
     /* Borders & Focus */
     --auth-border: #2b323b;
     --auth-border-alt: #343c46;
-    --auth-border-focus: #f59e0b;
-    --auth-ring-focus: rgba(245, 158, 11, 0.45);
+    --auth-border-focus: #3b82f6;
+    --auth-ring-focus: rgba(14, 165, 233, 0.45);
 
     /* Semantic */
     --auth-error-bg: #2b1d22;
@@ -31,11 +31,11 @@
     --auth-heading-grad: linear-gradient(
         90deg,
         #ffffff,
-        #fde68a 40%,
-        #fbbf24 80%
+        #93c5fd 40%,
+        #60a5fa 80%
     );
-    --auth-card-blob-a: linear-gradient(135deg, #303643, #f59e0b);
-    --auth-card-blob-b: linear-gradient(135deg, #fbbf24, #303643);
+    --auth-card-blob-a: linear-gradient(135deg, #303643, #0ea5e9);
+    --auth-card-blob-b: linear-gradient(135deg, #3b82f6, #303643);
 
     /* Spacing & Radii */
     --auth-radius-xl: 22px;
@@ -54,10 +54,10 @@
     --auth-shadow-card: 0 25px 60px -25px rgba(0, 0, 0, 0.55),
         0 16px 32px -16px rgba(0, 0, 0, 0.55),
         0 2px 6px -2px rgba(0, 0, 0, 0.65);
-    --auth-shadow-btn: 0 6px 18px -6px rgba(245, 158, 11, 0.45),
-        0 0 0 1px #f59e0b inset;
-    --auth-shadow-btn-hover: 0 10px 28px -10px rgba(245, 158, 11, 0.55),
-        0 0 0 1px #f59e0b inset;
+    --auth-shadow-btn: 0 6px 18px -6px rgba(14, 165, 233, 0.45),
+        0 0 0 1px #0ea5e9 inset;
+    --auth-shadow-btn-hover: 0 10px 28px -10px rgba(59, 130, 246, 0.55),
+        0 0 0 1px #3b82f6 inset;
     --auth-shadow-switch: 0 4px 14px -4px rgba(0, 0, 0, 0.55);
 
     /* Timings */
@@ -73,13 +73,13 @@ body.auth {
     justify-content: center;
     background: radial-gradient(
             circle at 18% 22%,
-            rgba(245, 158, 11, 0.12),
-            rgba(245, 158, 11, 0) 55%
+            rgba(14, 165, 233, 0.12),
+            rgba(14, 165, 233, 0) 55%
         ),
         radial-gradient(
             circle at 82% 78%,
-            rgba(251, 191, 36, 0.15),
-            rgba(251, 191, 36, 0) 60%
+            rgba(59, 130, 246, 0.15),
+            rgba(59, 130, 246, 0) 60%
         ),
         linear-gradient(135deg, #0b0e11, #12161c 55%, #101419);
     padding: var(--auth-spacing-xl);
@@ -395,7 +395,7 @@ input[type="time"]::-webkit-datetime-edit-fields-wrapper {
     background: linear-gradient(135deg, #252b33, #1d2229);
     border-color: var(--auth-border-focus);
     color: var(--auth-primary);
-    box-shadow: 0 0 0 1px #2f3640, 0 0 0 3px rgba(99, 102, 241, 0.15);
+    box-shadow: 0 0 0 1px #2f3640, 0 0 0 3px rgba(14, 165, 233, 0.2);
 }
 
 .footer-note {
