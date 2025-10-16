@@ -1,16 +1,16 @@
 <?php
 return [
     'db' => [
-        'host' => 'localhost',
-        'name' => 'barbersure',
-        'user' => 'root',
-        'pass' => '',
+        'host' => 'mysql.hostinger.com',
+        'name' => 'u635425032_barbersure',
+        'user' => 'u635425032_barbersure',
+        'pass' => '@Barbersure12345',
         'charset' => 'utf8mb4'
     ],
     'app' => [
         // If your project lives at http://localhost/BarberSure adjust like below.
         // If it's really at the root (http://localhost/), revert to http://localhost
-        'base_url' => 'http://localhost/barbersure-app', // include subfolder if applicable
+        'base_url' => 'http://barbersure.site', // include subfolder if applicable
         'batangas_center_lat' => 13.7565,
         'batangas_center_lng' => 121.0583,
         'batangas_radius_km' => 60
