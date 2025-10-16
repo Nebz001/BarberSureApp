@@ -491,6 +491,72 @@ function format_payment_time($datetime)
             color: #69839b;
             margin: .2rem 0 .4rem;
         }
+
+        /* Owner subscription card UI (blue theme) */
+        #owner-card-section {
+            background: #0b1a34;
+            border: 1px solid #1e3a8a;
+            border-radius: 12px;
+            padding: 0.9rem 1rem 1rem;
+            box-shadow: 0 6px 24px -12px rgba(11, 26, 52, 0.8);
+        }
+        #owner-card-section h3 {
+            color: #93c5fd;
+        }
+        #owner-card-section .form-grid {
+            gap: 0.8rem;
+            margin: 0.4rem 0 0.2rem;
+        }
+        #owner-card-section label {
+            color: #93c5fd;
+            font-size: .66rem;
+            letter-spacing: .4px;
+        }
+        #owner-card-section input,
+        #owner-card-section select {
+            background: #0a1530;
+            border: 1px solid #1e3a8a;
+            color: #e6f1ff;
+            border-radius: 10px;
+            padding: .6rem .7rem;
+            font-size: .72rem;
+            outline: none;
+            transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+        }
+        #owner-card-section input::placeholder {
+            color: #98b4da;
+            opacity: .75;
+        }
+        #owner-card-section select {
+            appearance: none;
+        }
+        #owner-card-section input:focus,
+        #owner-card-section select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .18);
+            background: #0a1740;
+        }
+        #owner-card-section .input-icon {
+            position: relative;
+            display: block;
+        }
+        #owner-card-section .input-icon > i {
+            position: absolute;
+            left: .6rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #60a5fa;
+            font-size: .9rem;
+            pointer-events: none;
+        }
+        #owner-card-section .input-icon > input {
+            padding-left: 2rem;
+        }
+        #owner-card-section #card-error {
+            border-color: #5c1f2c;
+            background: #2a1218;
+            color: #fda4af;
+        }
     </style>
 </head>
 
@@ -542,9 +608,43 @@ function format_payment_time($datetime)
                         <li style="color:#f87171;font-weight:600;">Account not verified – subscription activation is blocked.</li>
                     <?php endif; ?>
                 </ul>
+                <!-- Card details required before confirming (mirrors customer online payment UI) -->
+                <div id="owner-card-section" style="margin:.8rem 0 1rem;max-width:520px;">
+                    <h3 style="margin:0 0 .5rem;font-size:.85rem;color:#9fb6cb;display:flex;align-items:center;gap:.4rem;">
+                        <i class="bi bi-credit-card" aria-hidden="true"></i> Card details
+                    </h3>
+                    <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin:.4rem 0 0;">
+                        <label>Card Number
+                            <span class="input-icon">
+                                <i class="bi bi-credit-card-2-front"></i>
+                                <input id="card-number" name="card_number" type="text" class="control" inputmode="numeric" autocomplete="cc-number" placeholder="1234 5678 9012 3456" maxlength="19" />
+                            </span>
+                        </label>
+                        <label>Expiration (MM/YY)
+                            <input id="card-exp" name="card_exp" type="text" class="control" inputmode="numeric" autocomplete="cc-exp" placeholder="MM/YY" maxlength="5" />
+                        </label>
+                        <label>CVC
+                            <input id="card-cvc" name="card_cvc" type="text" class="control" inputmode="numeric" autocomplete="cc-csc" placeholder="123" maxlength="4" />
+                        </label>
+                        <label>Billing Country
+                            <select id="card-country" name="card_country" class="control">
+                                <option value="">Select country</option>
+                                <option value="PH">Philippines</option>
+                                <option value="US">United States</option>
+                                <option value="CA">Canada</option>
+                                <option value="GB">United Kingdom</option>
+                                <option value="AU">Australia</option>
+                                <option value="SG">Singapore</option>
+                                <option value="MY">Malaysia</option>
+                                <option value="AE">United Arab Emirates</option>
+                            </select>
+                        </label>
+                    </div>
+                    <p id="card-error" role="alert" style="display:none;margin:.6rem 0 0;padding:.5rem .6rem;border-radius:8px;border:1px solid #5c1f2c;background:#2a1218;color:#fda4af;font-size:.62rem;">Please fill in valid card details before confirming.</p>
+                </div>
                 <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
                     <?php if ($ownerIsVerified): ?>
-                        <a href="payments.php?plan=<?= e($planSel) ?>&confirm=1" class="btn btn-primary" style="background:#059669;border-color:#059669;">Confirm & Activate</a>
+                        <a id="confirm-activate" href="payments.php?plan=<?= e($planSel) ?>&confirm=1" class="btn btn-primary" style="background:#059669;border-color:#059669;">Confirm & Activate</a>
                     <?php else: ?>
                         <button type="button" class="btn btn-primary" disabled style="background:#374151;border-color:#374151;opacity:.6;cursor:not-allowed;">Verify Account First</button>
                     <?php endif; ?>
@@ -791,6 +891,100 @@ function format_payment_time($datetime)
         </div>
     </div>
 
+    <script>
+        // Owner subscription: card formatting and validation, and gate confirm
+        (function() {
+            const num = document.getElementById('card-number');
+            const exp = document.getElementById('card-exp');
+            const cvc = document.getElementById('card-cvc');
+            const country = document.getElementById('card-country');
+            const err = document.getElementById('card-error');
+            const confirmBtn = document.getElementById('confirm-activate');
+
+            function showError(msg) {
+                if (!err) return;
+                err.textContent = msg || 'Please fill in valid card details.';
+                err.style.display = '';
+            }
+
+            function hideError() {
+                if (err) err.style.display = 'none';
+            }
+
+            function formatCardNumber(value) {
+                const digits = (value || '').replace(/\D+/g, '').slice(0, 16);
+                return digits.replace(/(.{4})/g, '$1 ').trim();
+            }
+
+            function onNumberInput(e) {
+                const el = e.target;
+                const start = el.selectionStart;
+                const before = el.value;
+                el.value = formatCardNumber(el.value);
+                // naive caret correction
+                const diff = el.value.length - before.length;
+                el.selectionStart = el.selectionEnd = (start || 0) + diff;
+                hideError();
+            }
+
+            function onExpInput(e) {
+                let v = (e.target.value || '').replace(/[^\d]/g, '').slice(0, 4);
+                if (v.length >= 3) v = v.slice(0, 2) + '/' + v.slice(2);
+                e.target.value = v;
+                hideError();
+            }
+
+            function isValidCard() {
+                const digits = (num?.value || '').replace(/\D+/g, '');
+                if (digits.length < 16) {
+                    showError('Card number must be 16 digits.');
+                    return false;
+                }
+                const ev = exp?.value || '';
+                if (!/^\d{2}\/\d{2}$/.test(ev)) {
+                    showError('Expiration must be in MM/YY format.');
+                    return false;
+                }
+                const mm = parseInt(ev.slice(0, 2), 10);
+                const yy = 2000 + parseInt(ev.slice(3), 10);
+                if (!(mm >= 1 && mm <= 12) || isNaN(yy)) {
+                    showError('Invalid expiration.');
+                    return false;
+                }
+                const now = new Date();
+                const curY = now.getFullYear();
+                const curM = now.getMonth() + 1;
+                if (yy < curY || (yy === curY && mm < curM)) {
+                    showError('Card has expired.');
+                    return false;
+                }
+                if (!/^\d{3,4}$/.test(cvc?.value || '')) {
+                    showError('CVC must be 3 or 4 digits.');
+                    return false;
+                }
+                if (!country?.value) {
+                    showError('Please select a billing country.');
+                    return false;
+                }
+                hideError();
+                return true;
+            }
+
+            num?.addEventListener('input', onNumberInput);
+            exp?.addEventListener('input', onExpInput);
+            cvc?.addEventListener('input', hideError);
+            country?.addEventListener('change', hideError);
+
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', function(e) {
+                    if (!isValidCard()) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                });
+            }
+        })();
+    </script>
     <script>
         (function initToasts() {
             const stack = document.querySelector('.toast-stack');

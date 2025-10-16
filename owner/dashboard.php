@@ -5,6 +5,8 @@ require_login();
 if (!has_role('owner')) redirect('../login.php');
 $user = current_user();
 $ownerId = (int)($user['user_id'] ?? 0);
+// Shared domain functions
+require_once __DIR__ . '/../config/functions.php';
 
 // Ensure we have verification status
 $isVerified = (int)($user['is_verified'] ?? -1);
@@ -48,6 +50,17 @@ $upcoming = $upStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 $revStmt = $pdo->prepare("SELECT r.review_id,r.rating,LEFT(r.comment,160) comment,r.created_at,b.shop_name FROM Reviews r JOIN Barbershops b ON r.shop_id=b.shop_id WHERE b.owner_id=? ORDER BY r.created_at DESC LIMIT 5");
 $revStmt->execute([$ownerId]);
 $recentReviews = $revStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+// Determine if any of the owner's shops currently has an active paid subscription
+$ownerHasActiveSub = false;
+try {
+    $shopStmt = $pdo->prepare("SELECT shop_id FROM Barbershops WHERE owner_id=?");
+    $shopStmt->execute([$ownerId]);
+    $shopIds = $shopStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    foreach ($shopIds as $sid) {
+        if (is_subscribed((int)$sid)) { $ownerHasActiveSub = true; break; }
+    }
+} catch (Throwable $e) { /* default false */ }
 
 // Simple revenue sparkline data (14 days)
 $sparkStmt = $pdo->prepare("SELECT DATE(p.paid_at) d, COALESCE(SUM(p.amount),0) amt FROM Payments p JOIN Barbershops b ON p.shop_id=b.shop_id WHERE b.owner_id=? AND p.payment_status='completed' AND p.transaction_type='appointment' AND p.paid_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY) GROUP BY DATE(p.paid_at) ORDER BY d ASC");
@@ -232,11 +245,48 @@ if (!$isVerified) {
         </nav>
     </header>
     <main class="owner-main">
-        <?php if ($isVerified): ?>
+    <?php if ($isVerified && $ownerHasActiveSub): ?>
             <section class="card" style="padding:1.2rem 1.25rem 1.35rem;margin-bottom:1.5rem;">
                 <h1 style="margin:0;font-weight:600;letter-spacing:.4px;font-size:1.55rem;">Welcome back<?= $user ? ', ' . e(explode(' ', trim($user['full_name']))[0]) : '' ?>!</h1>
                 <p style="font-size:.75rem;color:var(--o-text-soft);margin:.6rem 0 0;max-width:780px;line-height:1.55;">Monitor performance across your barbershops: appointments, revenue, and customer feedback — all in one unified view.</p>
             </section>
+            <?php if (!$ownerHasActiveSub): ?>
+            <!-- Subscription CTA remains visible until an active plan is paid -->
+            <div class="cta-banner" style="background:linear-gradient(135deg,#0b1624,#0a1120);border:1px solid #1d3557;padding:1.2rem 1.25rem 1.3rem;border-radius:14px;margin:0 0 1.4rem;display:flex;flex-direction:column;gap:.7rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:.8rem;flex-wrap:wrap;">
+                    <h2 style="margin:0;font-size:1.05rem;letter-spacing:.4px;color:#cfe3ff;">Unlock full features with a subscription</h2>
+                    <div style="font-size:.7rem;color:#93c5fd;">Shops with a subscription get <strong style="color:#93c5fd;">2x more bookings</strong>.</div>
+                </div>
+                <div style="display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));">
+                    <div style="background:linear-gradient(140deg,#0b224b,#081a34 55%,#071328);border:1px solid #1e3a8a;border-radius:14px;padding:1.1rem 1.05rem 1.15rem;display:flex;flex-direction:column;gap:.65rem;position:relative;box-shadow:0 2px 6px -2px rgba(0,0,0,.45),0 0 0 1px #1e3a8a inset;">
+                        <h4 style="margin:0;font-size:1.05rem;letter-spacing:.4px;background:linear-gradient(90deg,#bfdbfe,#93c5fd,#60a5fa);-webkit-background-clip:text;background-clip:text;color:transparent;">Monthly Plan</h4>
+                        <div style="font-size:1.35rem;font-weight:600;color:#cfe3ff;">💳 ₱499 <span style="font-size:.7rem;font-weight:600;color:#93c5fd;letter-spacing:.6px;">/ MONTH</span></div>
+                        <ul style="list-style:none;margin:0;padding:0;font-size:.72rem;line-height:1.25rem;color:#cfe3ff;letter-spacing:.35px;">
+                            <li>Cancel anytime</li>
+                            <li>Full access to bookings</li>
+                            <li>Notifications & insights</li>
+                        </ul>
+                        <div class="plan-cta" style="margin-top:auto;">
+                            <a href="payments.php?plan=monthly" class="btn-accent btn-select" aria-label="Select monthly plan">Select <i class="bi bi-arrow-right-circle" aria-hidden="true"></i></a>
+                        </div>
+                    </div>
+                    <div style="background:radial-gradient(circle at 25% 18%,#0d2760 0%,#0a1e47 55%,#071735 100%);border:1px solid #1e3a8a;border-radius:14px;padding:1.1rem 1.05rem 1.15rem;display:flex;flex-direction:column;gap:.65rem;position:relative;box-shadow:0 4px 12px -4px #000,0 0 0 1px #1e3a8a inset;">
+                        <div style="position:absolute;top:-11px;right:10px;background:linear-gradient(90deg,#3b82f6,#2563eb);color:#fff;font-size:.6rem;padding:.35rem .6rem;border-radius:8px;letter-spacing:.65px;font-weight:700;box-shadow:0 2px 6px -2px #000;">BEST VALUE</div>
+                        <h4 style="margin:0;font-size:1.05rem;letter-spacing:.4px;background:linear-gradient(90deg,#bfdbfe,#93c5fd,#60a5fa);-webkit-background-clip:text;background-clip:text;color:transparent;">Yearly Plan</h4>
+                        <div style="font-size:1.35rem;font-weight:600;color:#cfe3ff;">💳 ₱4,999 <span style="font-size:.7rem;font-weight:600;color:#93c5fd;letter-spacing:.6px;">/ YEAR</span></div>
+                        <div style="font-size:.62rem;color:#93c5fd;margin-top:-.2rem;letter-spacing:.45px;">Equivalent to ₱416 / month (save ~17%)</div>
+                        <ul style="list-style:none;margin:0;padding:0;font-size:.72rem;line-height:1.25rem;color:#cfe3ff;letter-spacing:.35px;">
+                            <li>Priority placement in search</li>
+                            <li>Full access & insights</li>
+                            <li>Exclusive seasonal promotions</li>
+                        </ul>
+                        <div class="plan-cta" style="margin-top:auto;">
+                            <a href="payments.php?plan=yearly" class="btn-accent btn-select" aria-label="Select yearly plan">Select <i class="bi bi-arrow-right-circle" aria-hidden="true"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
             <div class="metrics-grid">
                 <div class="metric"><span class="metric-label"><i class="bi bi-shop" aria-hidden="true"></i>Total Shops</span><span class="metric-value"><?= $shopsTotal ?></span><span class="metric-trend">Approved: <?= $shopsApproved ?></span></div>
                 <div class="metric"><span class="metric-label"><i class="bi bi-calendar-day" aria-hidden="true"></i>Today Appts</span><span class="metric-value"><?= (int)$apptStats['today_cnt'] ?></span><span class="metric-trend">Next 7d: <?= (int)$apptStats['next7'] ?></span></div>
@@ -430,6 +480,41 @@ if (!$isVerified) {
 
                 .btn-accent:hover {
                     filter: brightness(1.05);
+                }
+
+                /* Dedicated style for plan select CTA */
+                .btn-select {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    width: 100%;
+                    max-width: 100%;
+                    box-sizing: border-box;
+                    text-align: center;
+                    letter-spacing: .55px;
+                    padding: .8rem 1rem;
+                }
+                .btn-select .bi { color: #eaf2ff; margin-left: .4rem; font-size: 1rem; }
+                .btn-accent.btn-select:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 0 0 1px #1d4ed8 inset, 0 6px 16px -6px #000, 0 10px 20px -12px #1e40af99;
+                }
+                .btn-accent.btn-select:active { transform: translateY(0); }
+                .btn-accent.btn-select:focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
+
+                /* Button container with background color */
+                .plan-cta {
+                    display: block;
+                    width: 100%;
+                    max-width: 100%;
+                    box-sizing: border-box;
+                    margin-top: .5rem;
+                    background: linear-gradient(135deg, #0d2450, #0a1d3b);
+                    border: 1px solid #1e3a8a;
+                    border-radius: 12px;
+                    padding: .6rem;
+                    box-shadow: 0 0 0 1px #1e3a8a inset, 0 4px 10px -6px #000;
+                    overflow: hidden;
                 }
 
                 .btn-outline {
@@ -678,22 +763,39 @@ if (!$isVerified) {
             </style>
             <div class="cta-banner">
                 <h1>Welcome to BarberSure! 🚀</h1>
-                <p>Your shop is registered but not yet verified. Complete your subscription to unlock full features and start attracting customers.</p>
+                <p>
+                    <?php if (!$isVerified): ?>
+                        Your shop is registered but not yet verified. Complete verification and then choose a subscription to unlock full features and start attracting customers.
+                    <?php else: ?>
+                        Your account is verified, but there is no active subscription yet. Choose a plan to unlock full features and start attracting customers.
+                    <?php endif; ?>
+                </p>
                 <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
-                    <a href="profile.php?verify=1" class="btn-accent">Verify &amp; Subscribe Now</a>
-                    <a href="profile.php" class="btn-outline">Update Profile</a>
+                    <?php if (!$isVerified): ?>
+                        <a href="profile.php?verify=1" class="btn-accent">Complete Verification</a>
+                        <a href="payments.php" class="btn-outline">View Plans</a>
+                    <?php else: ?>
+                        <a href="payments.php" class="btn-accent">Choose a Plan</a>
+                        <a href="profile.php" class="btn-outline">Update Profile</a>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="lim-pair">
                 <div class="shop-box">
                     <div class="shop-header-flex">
                         <h2>Shop Profile</h2>
-                        <span class="status-badge" title="Current status: <?= $hasPendingDocs ? 'Documents submitted - pending review' : 'Not Verified' ?>">
+                        <?php
+                            $statusLabel = 'NOT VERIFIED';
+                            $statusTitle = 'Not Verified';
+                            if (!$isVerified && $hasPendingDocs) { $statusLabel = 'PENDING REVIEW'; $statusTitle = 'Documents submitted - pending review'; }
+                            elseif ($isVerified && !$ownerHasActiveSub) { $statusLabel = 'NO SUBSCRIPTION'; $statusTitle = 'Account verified – subscription required'; }
+                        ?>
+                        <span class="status-badge" title="Current status: <?= e($statusTitle) ?>">
                             <svg viewBox="0 0 24 24">
                                 <path d="M12 3 3 9l9 6 9-6-9-6Z" />
                                 <path d="M3 15l9 6 9-6" />
                             </svg>
-                            <?= $hasPendingDocs ? 'PENDING REVIEW' : 'NOT VERIFIED' ?>
+                            <?= e($statusLabel) ?>
                         </span>
                     </div>
                     <?php if ($limShop): ?>
@@ -728,7 +830,11 @@ if (!$isVerified) {
                     </ul>
                     <p class="mini-note" style="margin-top:.4rem;">Customers cannot see your shop until verification is complete.</p>
                     <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
-                        <button type="button" class="btn-accent" style="padding:.6rem 1.05rem;" onclick="openDocModal()" <?= $hasPendingDocs ? 'disabled style="opacity:.6;cursor:not-allowed;padding:.6rem 1.05rem;"' : '' ?>><?= $hasPendingDocs ? 'Documents Submitted' : 'Complete Verification' ?></button>
+                        <?php if (!$isVerified): ?>
+                            <button type="button" class="btn-accent" style="padding:.6rem 1.05rem;" onclick="openDocModal()" <?= $hasPendingDocs ? 'disabled style="opacity:.6;cursor:not-allowed;padding:.6rem 1.05rem;"' : '' ?>><?= $hasPendingDocs ? 'Documents Submitted' : 'Complete Verification' ?></button>
+                        <?php else: ?>
+                            <a href="payments.php" class="btn-accent" style="padding:.6rem 1.05rem;">Choose a Plan</a>
+                        <?php endif; ?>
                     </div>
                 </div><!-- end shop-box -->
                 <div class="why-box">
@@ -795,7 +901,9 @@ if (!$isVerified) {
                             <li>Full access to bookings</li>
                             <li>Notifications & insights</li>
                         </ul>
-                        <a href="payments.php?plan=monthly" class="btn-accent" style="margin-top:auto;text-align:center;">Select</a>
+                        <div class="plan-cta" style="margin-top:auto;">
+                            <a href="payments.php?plan=monthly" class="btn-accent btn-select" aria-label="Select monthly plan">Select <i class="bi bi-arrow-right-circle" aria-hidden="true"></i></a>
+                        </div>
                     </div>
                     <div style="background:radial-gradient(circle at 25% 18%,#0d2760 0%,#0a1e47 55%,#071735 100%);border:1px solid #1e3a8a;border-radius:14px;padding:1.1rem 1.05rem 1.15rem;display:flex;flex-direction:column;gap:.65rem;position:relative;box-shadow:0 4px 12px -4px #000,0 0 0 1px #1e3a8a inset;">
                         <div style="position:absolute;top:-11px;right:10px;background:linear-gradient(90deg,#3b82f6,#2563eb);color:#fff;font-size:.6rem;padding:.35rem .6rem;border-radius:8px;letter-spacing:.65px;font-weight:700;box-shadow:0 2px 6px -2px #000;">BEST VALUE</div>
@@ -807,7 +915,9 @@ if (!$isVerified) {
                             <li>Full access & insights</li>
                             <li>Exclusive seasonal promotions</li>
                         </ul>
-                        <a href="payments.php?plan=yearly" class="btn-accent" style="margin-top:auto;text-align:center;">Select</a>
+                        <div class="plan-cta" style="margin-top:auto;">
+                            <a href="payments.php?plan=yearly" class="btn-accent btn-select" aria-label="Select yearly plan">Select <i class="bi bi-arrow-right-circle" aria-hidden="true"></i></a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -827,35 +937,35 @@ if (!$isVerified) {
                         <input type="hidden" name="action" value="submit_verification_docs" />
                         <?php if (function_exists('csrf_token')): ?><input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>" /><?php endif; ?>
                         <div style="display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));">
-                            <label style="display:flex;flex-direction:column;gap:.45rem;background:#241207;border:1px solid #593514;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;">
-                                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#f3d9b9;">Government ID (Front)</span>
-                                <input type="file" name="valid_id_front" accept="image/*" style="font-size:.6rem;color:#d8c2aa;" required />
-                                <span style="font-size:.5rem;color:#b9956d;">PNG / JPG / WEBP</span>
+                            <label style="display:flex;flex-direction:column;gap:.45rem;background:#0b1a34;border:1px solid #1e3a8a;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;box-shadow:0 0 0 1px #1e3a8a inset, 0 4px 14px -8px #000;">
+                                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#93c5fd;">Government ID (Front)</span>
+                                <input type="file" name="valid_id_front" accept="image/*" style="font-size:.6rem;color:#cfe3ff;" required />
+                                <span style="font-size:.5rem;color:#60a5fa;">PNG / JPG / WEBP</span>
                             </label>
-                            <label style="display:flex;flex-direction:column;gap:.45rem;background:#241207;border:1px solid #593514;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;">
-                                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#f3d9b9;">Government ID (Back)</span>
-                                <input type="file" name="valid_id_back" accept="image/*" style="font-size:.6rem;color:#d8c2aa;" required />
-                                <span style="font-size:.5rem;color:#b9956d;">Same ID back side</span>
+                            <label style="display:flex;flex-direction:column;gap:.45rem;background:#0b1a34;border:1px solid #1e3a8a;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;box-shadow:0 0 0 1px #1e3a8a inset, 0 4px 14px -8px #000;">
+                                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#93c5fd;">Government ID (Back)</span>
+                                <input type="file" name="valid_id_back" accept="image/*" style="font-size:.6rem;color:#cfe3ff;" required />
+                                <span style="font-size:.5rem;color:#60a5fa;">Same ID back side</span>
                             </label>
-                            <label style="display:flex;flex-direction:column;gap:.45rem;background:#241207;border:1px solid #593514;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;">
-                                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#f3d9b9;">Business Permit / DTI / Barangay Clearance</span>
-                                <input type="file" name="business_permit" accept="image/*" style="font-size:.6rem;color:#d8c2aa;" required />
-                                <span style="font-size:.5rem;color:#b9956d;">Upload one clear image</span>
+                            <label style="display:flex;flex-direction:column;gap:.45rem;background:#0b1a34;border:1px solid #1e3a8a;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;box-shadow:0 0 0 1px #1e3a8a inset, 0 4px 14px -8px #000;">
+                                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#93c5fd;">Business Permit / DTI / Barangay Clearance</span>
+                                <input type="file" name="business_permit" accept="image/*" style="font-size:.6rem;color:#cfe3ff;" required />
+                                <span style="font-size:.5rem;color:#60a5fa;">Upload one clear image</span>
                             </label>
-                            <label style="display:flex;flex-direction:column;gap:.45rem;background:#241207;border:1px solid #593514;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;">
-                                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#f3d9b9;">Sanitation Certificate</span>
-                                <input type="file" name="sanitation_certificate" accept="image/*" style="font-size:.6rem;color:#d8c2aa;" required />
-                                <span style="font-size:.5rem;color:#b9956d;">Latest approved copy</span>
+                            <label style="display:flex;flex-direction:column;gap:.45rem;background:#0b1a34;border:1px solid #1e3a8a;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;box-shadow:0 0 0 1px #1e3a8a inset, 0 4px 14px -8px #000;">
+                                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#93c5fd;">Sanitation Certificate</span>
+                                <input type="file" name="sanitation_certificate" accept="image/*" style="font-size:.6rem;color:#cfe3ff;" required />
+                                <span style="font-size:.5rem;color:#60a5fa;">Latest approved copy</span>
                             </label>
-                            <label style="display:flex;flex-direction:column;gap:.45rem;background:#241207;border:1px solid #593514;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;">
-                                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#f3d9b9;">Tax Certificate</span>
-                                <input type="file" name="tax_certificate" accept="image/*" style="font-size:.6rem;color:#d8c2aa;" required />
-                                <span style="font-size:.5rem;color:#b9956d;">Proof of tax compliance</span>
+                            <label style="display:flex;flex-direction:column;gap:.45rem;background:#0b1a34;border:1px solid #1e3a8a;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;box-shadow:0 0 0 1px #1e3a8a inset, 0 4px 14px -8px #000;">
+                                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#93c5fd;">Tax Certificate</span>
+                                <input type="file" name="tax_certificate" accept="image/*" style="font-size:.6rem;color:#cfe3ff;" required />
+                                <span style="font-size:.5rem;color:#60a5fa;">Proof of tax compliance</span>
                             </label>
-                            <label style="display:flex;flex-direction:column;gap:.45rem;background:#241207;border:1px solid #593514;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;">
-                                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#f3d9b9;">Shop Photo(s)</span>
-                                <input type="file" name="shop_photos[]" accept="image/*" multiple style="font-size:.6rem;color:#d8c2aa;" required />
-                                <span style="font-size:.5rem;color:#b9956d;">Front & Interior (you can select multiple)</span>
+                            <label style="display:flex;flex-direction:column;gap:.45rem;background:#0b1a34;border:1px solid #1e3a8a;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;box-shadow:0 0 0 1px #1e3a8a inset, 0 4px 14px -8px #000;">
+                                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#93c5fd;">Shop Photo(s)</span>
+                                <input type="file" name="shop_photos[]" accept="image/*" multiple style="font-size:.6rem;color:#cfe3ff;" required />
+                                <span style="font-size:.5rem;color:#60a5fa;">Front & Interior (you can select multiple)</span>
                             </label>
                         </div>
                         <div style="display:flex;justify-content:flex-end;gap:.6rem;flex-wrap:wrap;">

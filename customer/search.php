@@ -18,7 +18,9 @@ $page = max(1, (int)in_get('page', 1));
 $perPage = 12;
 
 $params = [];
-$w = ["b.status='approved'"];
+$w = [
+    "b.status='approved'"
+];
 if ($q !== '') {
     $w[] = '(b.shop_name LIKE :kw OR b.city LIKE :kw)';
     $params[':kw'] = "%$q%";

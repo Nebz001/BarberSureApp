@@ -350,9 +350,9 @@ function activate_subscription(int $ownerId, int $shopId, string $planType, floa
         $insSub = $pdo->prepare("INSERT INTO Shop_Subscriptions (shop_id, plan_type, annual_fee, tax_rate, payment_status, valid_from, valid_to) VALUES (?,?,?,?, 'pending', ?, ?)");
         $insSub->execute([$shopId, $planType, $baseAmount, 0.0, $validFrom, $validTo]);
         $subId = (int)$pdo->lastInsertId();
-        // Insert payment record (completed - simulated gateway)
-        $insPay = $pdo->prepare("INSERT INTO Payments (user_id, shop_id, subscription_id, amount, tax_amount, transaction_type, payment_method, payment_status, paid_at) VALUES (?,?,?,?,0.00,'subscription','online','completed',NOW())");
-        $insPay->execute([$ownerId, $shopId, $subId, $baseAmount, 0.00]);
+    // Insert payment record (completed - simulated gateway)
+    $insPay = $pdo->prepare("INSERT INTO Payments (user_id, shop_id, subscription_id, amount, tax_amount, transaction_type, payment_method, payment_status, paid_at) VALUES (?,?,?,?,?,'subscription','online','completed',NOW())");
+    $insPay->execute([$ownerId, $shopId, $subId, $baseAmount, $taxAmount]);
         $payId = (int)$pdo->lastInsertId();
         // Update subscription with payment_id and mark paid
         $upd = $pdo->prepare("UPDATE Shop_Subscriptions SET payment_status='paid', payment_id=? WHERE subscription_id=?");
