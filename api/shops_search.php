@@ -12,7 +12,7 @@ require_once __DIR__ . '/../config/functions.php';
 
 function in_get($k, $d = null)
 {
-    return isset($_GET[$k]) ? trim((string)$_GET[$k]) : $d;
+  return isset($_GET[$k]) ? trim((string)$_GET[$k]) : $d;
 }
 
 $q = in_get('q', '');
@@ -25,22 +25,23 @@ if (!in_array($perPage, [6, 12, 24, 36], true)) $perPage = 12;
 
 $params = [];
 $w = [
-    "b.status='approved'"
+  "b.status='approved'",
+  "EXISTS (SELECT 1 FROM Shop_Subscriptions s WHERE s.shop_id=b.shop_id AND s.payment_status='paid' AND CURDATE() BETWEEN s.valid_from AND s.valid_to)"
 ];
 if ($q !== '') {
-    $w[] = "(b.shop_name LIKE :kw OR b.city LIKE :kw)";
-    $params[':kw'] = "%$q%";
+  $w[] = "(b.shop_name LIKE :kw OR b.city LIKE :kw)";
+  $params[':kw'] = "%$q%";
 }
 if ($city !== '') {
-    $w[] = "b.city=:city";
-    $params[':city'] = $city;
+  $w[] = "b.city=:city";
+  $params[':city'] = $city;
 }
 if ($verified === '1') {
-    $w[] = "u.is_verified=1";
+  $w[] = "u.is_verified=1";
 }
 if ($service !== '') {
-    $w[] = "EXISTS(SELECT 1 FROM Services s WHERE s.shop_id=b.shop_id AND s.service_name LIKE :svc)";
-    $params[':svc'] = "%$service%";
+  $w[] = "EXISTS(SELECT 1 FROM Services s WHERE s.shop_id=b.shop_id AND s.service_name LIKE :svc)";
+  $params[':svc'] = "%$service%";
 }
 $whereSql = implode(' AND ', $w);
 
@@ -51,8 +52,8 @@ $cStmt->execute();
 $total = (int)$cStmt->fetchColumn();
 $offset = ($page - 1) * $perPage;
 if ($offset >= $total && $total > 0) {
-    $page = (int)ceil($total / $perPage);
-    $offset = ($page - 1) * $perPage;
+  $page = (int)ceil($total / $perPage);
+  $offset = ($page - 1) * $perPage;
 }
 
 $sql = "SELECT b.shop_id,b.shop_name,b.city,b.address,LEFT(IFNULL(b.description,''),180) AS description,u.is_verified,
@@ -73,8 +74,8 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 http_response_code(200);
 echo json_encode([
-    'data' => $data,
-    'total' => $total,
-    'page' => $page,
-    'per_page' => $perPage
+  'data' => $data,
+  'total' => $total,
+  'page' => $page,
+  'per_page' => $perPage
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
