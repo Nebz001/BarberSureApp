@@ -379,6 +379,39 @@ $currentPage = 'home';
       box-shadow: 0 2px 10px rgba(0, 0, 0, .35);
     }
 
+    /* Mosaic for multiple shops (broader view) */
+    .mosaic-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .mini-card {
+      background: #111c27;
+      border: 1px solid #223243;
+      border-radius: 14px;
+      padding: .9rem;
+    }
+
+    .mini-title {
+      font-weight: 600;
+      line-height: 1.1;
+    }
+
+    .chip {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid #223243;
+      color: #cfe4ff;
+      border-radius: 999px;
+      padding: .15rem .5rem;
+      font-size: .75rem;
+      font-weight: 500;
+    }
+
+    .xsmall {
+      font-size: .75rem;
+    }
+
     .shadow-soft {
       box-shadow: 0 8px 28px -10px rgba(0, 0, 0, .55);
     }
@@ -432,31 +465,73 @@ $currentPage = 'home';
         </div>
         <div class="col-lg-6 animate-fade-up" style="animation-delay:.15s;">
           <div class="hero-visual mx-auto floating">
-            <div class="hero-card">
-              <div class="d-flex align-items-center mb-3">
-                <div class="shop-avatar me-3"><i class="bi bi-scissors"></i></div>
-                <div>
-                  <div class="fw-semibold">Fade District Barbers</div>
-                  <div class="small text-muted"><i class="bi bi-geo-alt me-1"></i>Batangas City</div>
+            <div class="mosaic-grid">
+              <div class="mini-card">
+                <div class="d-flex align-items-center mb-2">
+                  <div class="shop-avatar me-2"><i class="bi bi-scissors"></i></div>
+                  <div>
+                    <div class="mini-title">Verified Shop</div>
+                    <div class="small text-muted"><i class="bi bi-geo-alt me-1"></i>Batangas City</div>
+                  </div>
+                  <div class="ms-auto text-warning small d-flex align-items-center gap-1">
+                    <i class="bi bi-star-fill"></i><span>4.8</span>
+                  </div>
                 </div>
-                <div class="ms-auto text-warning d-flex align-items-center gap-1">
-                  <i class="bi bi-star-fill"></i>
-                  <span class="fw-semibold">4.8</span>
+                <div class="d-flex flex-wrap gap-1">
+                  <span class="chip">Skin Fade</span>
+                  <span class="chip">Beard</span>
                 </div>
               </div>
-              <div class="d-flex flex-wrap gap-2 mb-3">
-                <span class="badge rounded-pill service-badge">Skin Fade</span>
-                <span class="badge rounded-pill service-badge">Beard Trim</span>
-                <span class="badge rounded-pill service-badge">Kids Cut</span>
+              <div class="mini-card">
+                <div class="d-flex align-items-center mb-2">
+                  <div class="shop-avatar me-2" style="color:#10b981;"><i class="bi bi-person-bounding-box"></i></div>
+                  <div>
+                    <div class="mini-title">Verified Shop</div>
+                    <div class="small text-muted"><i class="bi bi-geo-alt me-1"></i>Lipa</div>
+                  </div>
+                  <div class="ms-auto text-warning small d-flex align-items-center gap-1">
+                    <i class="bi bi-star-fill"></i><span>4.7</span>
+                  </div>
+                </div>
+                <div class="d-flex flex-wrap gap-1">
+                  <span class="chip">Kids Cut</span>
+                  <span class="chip">Classic</span>
+                </div>
               </div>
-              <div class="d-flex align-items-center justify-content-between small text-muted">
-                <div><i class="bi bi-clock me-1"></i>Open today: 9:00 AM – 7:00 PM</div>
-                <div class="d-flex align-items-center">
-                  <span class="barber-pole me-2" aria-hidden="true"></span>
-                  <span class="text-info fw-semibold">Walk-ins welcome</span>
+              <div class="mini-card">
+                <div class="d-flex align-items-center mb-2">
+                  <div class="shop-avatar me-2" style="color:#f59e0b;"><i class="bi bi-brush"></i></div>
+                  <div>
+                    <div class="mini-title">Verified Shop</div>
+                    <div class="small text-muted"><i class="bi bi-geo-alt me-1"></i>Tanauan</div>
+                  </div>
+                  <div class="ms-auto text-warning small d-flex align-items-center gap-1">
+                    <i class="bi bi-star-fill"></i><span>4.9</span>
+                  </div>
+                </div>
+                <div class="d-flex flex-wrap gap-1">
+                  <span class="chip">Hair Color</span>
+                  <span class="chip">Hot Towel</span>
+                </div>
+              </div>
+              <div class="mini-card">
+                <div class="d-flex align-items-center mb-2">
+                  <div class="shop-avatar me-2" style="color:#60a5fa;"><i class="bi bi-lightning-charge"></i></div>
+                  <div>
+                    <div class="mini-title">Verified Shop</div>
+                    <div class="small text-muted"><i class="bi bi-geo-alt me-1"></i>Sto. Tomas</div>
+                  </div>
+                  <div class="ms-auto text-warning small d-flex align-items-center gap-1">
+                    <i class="bi bi-star-fill"></i><span>4.6</span>
+                  </div>
+                </div>
+                <div class="d-flex flex-wrap gap-1">
+                  <span class="chip">Line Up</span>
+                  <span class="chip">Shave</span>
                 </div>
               </div>
             </div>
+            <div class="text-center mt-3 xsmall text-muted">Discover verified barbershops across Batangas — reserve now, pay in person.</div>
           </div>
         </div>
       </div>
