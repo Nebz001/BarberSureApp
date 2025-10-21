@@ -101,6 +101,8 @@ $batangasCities = [
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../assets/css/owner.css" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <!-- Leaflet CSS for map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <style>
     .card {
       background: linear-gradient(135deg, #0b1624, #0a1120);
@@ -108,10 +110,39 @@ $batangasCities = [
       border-radius: 14px;
     }
 
-    .form-row {
+    /* Match field styling used in Manage Shop */
+    .form-grid {
       display: grid;
-      gap: .75rem;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 1rem;
+      margin: .5rem 0 1.2rem;
+    }
+
+    form label {
+      display: flex;
+      flex-direction: column;
+      font-size: .65rem;
+      font-weight: 600;
+      letter-spacing: .5px;
+      gap: .35rem;
+      color: var(--o-text-soft);
+    }
+
+    form input,
+    form textarea,
+    form select {
+      background: #111c27;
+      border: 1px solid #253344;
+      border-radius: 8px;
+      padding: .55rem .65rem;
+      color: #e9eef3;
+      font-size: .72rem;
+      font-family: inherit;
+    }
+
+    form textarea {
+      resize: vertical;
+      min-height: 70px;
     }
 
     .small-note {
@@ -127,6 +158,31 @@ $batangasCities = [
       padding: .6rem .8rem;
       border-radius: 8px;
       font-size: .7rem;
+    }
+
+    /* Map container styling */
+    .map-wrap {
+      background: #0f1a24;
+      border: 1px solid #223142;
+      border-radius: 10px;
+      padding: .5rem;
+    }
+
+    .map-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: .4rem;
+      gap: .5rem;
+      font-size: .6rem;
+      color: #7fa6c7;
+    }
+
+    #shopMapCreate {
+      width: 100%;
+      height: 280px;
+      border-radius: 8px;
+      overflow: hidden;
     }
   </style>
   <script>
@@ -179,13 +235,11 @@ $batangasCities = [
       <form method="post" onsubmit="return confirmSubmit(event)" style="display:flex;flex-direction:column;gap:.9rem;">
         <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>" />
         <input type="hidden" name="action" value="register_shop" />
-        <div class="form-row">
-          <label style="display:flex;flex-direction:column;gap:.35rem;">
-            <span class="label" style="font-size:.7rem;color:#cfe3ff;font-weight:600;">Shop Name</span>
+        <div class="form-grid">
+          <label>Shop Name
             <input type="text" name="shop_name" required placeholder="e.g., Fade Masters Barbershop" />
           </label>
-          <label style="display:flex;flex-direction:column;gap:.35rem;">
-            <span class="label" style="font-size:.7rem;color:#cfe3ff;font-weight:600;">City (Batangas)</span>
+          <label>City (Batangas)
             <select name="city" required>
               <option value="" disabled selected>Select City</option>
               <?php foreach ($batangasCities as $c): ?>
@@ -195,19 +249,21 @@ $batangasCities = [
             <span class="small-note">Choose the city where your shop operates.</span>
           </label>
         </div>
-        <label style="display:flex;flex-direction:column;gap:.35rem;">
-          <span class="label" style="font-size:.7rem;color:#cfe3ff;font-weight:600;">Address</span>
+        <label>Address
           <textarea name="address" rows="3" required placeholder="Street / Brgy / Landmark"></textarea>
         </label>
-        <div class="form-row">
-          <label style="display:flex;flex-direction:column;gap:.35rem;">
-            <span class="label" style="font-size:.7rem;color:#cfe3ff;font-weight:600;">Latitude (optional)</span>
-            <input type="text" name="latitude" inputmode="decimal" placeholder="e.g., 13.7563" />
-          </label>
-          <label style="display:flex;flex-direction:column;gap:.35rem;">
-            <span class="label" style="font-size:.7rem;color:#cfe3ff;font-weight:600;">Longitude (optional)</span>
-            <input type="text" name="longitude" inputmode="decimal" placeholder="e.g., 121.0583" />
-          </label>
+        <div class="map-wrap" style="margin-top:.6rem;">
+          <div class="map-toolbar">
+            <strong style="letter-spacing:.4px;">Pin Location (optional)</strong>
+            <div style="display:flex;gap:.5rem;align-items:center;">
+              <button type="button" class="btn btn-small" id="geoBtnCreate" style="font-size:.6rem;">Use my location</button>
+              <span id="coordsCreate" class="small-note" style="font-size:.6rem;">Lat/Lng: —</span>
+            </div>
+          </div>
+          <div id="shopMapCreate" role="region" aria-label="Shop location map"></div>
+          <input type="hidden" name="latitude" id="latitudeCreate" />
+          <input type="hidden" name="longitude" id="longitudeCreate" />
+          <div class="small-note" style="font-size:.6rem;">Drag the pin or click the map to set your shop location. This helps customers find you.</div>
         </div>
         <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
           <button type="submit" class="btn-accent"><i class="bi bi-plus-circle" aria-hidden="true"></i> Create Shop</button>
@@ -226,6 +282,135 @@ $batangasCities = [
       const first = document.querySelector('input[name="shop_name"]');
       if (first) first.focus();
     });
+  </script>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    // Map initializer copied from Manage Shop for consistency
+    function initMap(containerId, latInputId, lngInputId, coordsLabelId, geoBtnId, initialLat, initialLng) {
+      const mapEl = document.getElementById(containerId);
+      if (!mapEl) return null;
+      const latEl = document.getElementById(latInputId);
+      const lngEl = document.getElementById(lngInputId);
+      const labelEl = document.getElementById(coordsLabelId);
+      const geoBtn = document.getElementById(geoBtnId);
+      const formEl = mapEl.closest('form');
+      const addrTextarea = formEl ? formEl.querySelector('textarea[name="address"]') : null;
+
+      const DEFAULT_CENTER = [13.9400, 121.1600]; // Lipa, Batangas approx
+      const startLat = (initialLat != null && !isNaN(initialLat)) ? parseFloat(initialLat) : (latEl && latEl.value ? parseFloat(latEl.value) : null);
+      const startLng = (initialLng != null && !isNaN(initialLng)) ? parseFloat(initialLng) : (lngEl && lngEl.value ? parseFloat(lngEl.value) : null);
+      const start = (startLat != null && startLng != null) ? [startLat, startLng] : DEFAULT_CENTER;
+
+      const map = L.map(mapEl).setView(start, (startLat != null ? 15 : 11));
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      const marker = L.marker(start, {
+        draggable: true
+      }).addTo(map);
+
+      function updateInputs(latlng) {
+        if (latEl) latEl.value = latlng.lat.toFixed(6);
+        if (lngEl) lngEl.value = latlng.lng.toFixed(6);
+        if (labelEl) labelEl.textContent = 'Lat/Lng: ' + latlng.lat.toFixed(6) + ', ' + latlng.lng.toFixed(6);
+        reverseGeocode(latlng.lat, latlng.lng);
+      }
+
+      if ((latEl && latEl.value) && (lngEl && lngEl.value)) {
+        if (labelEl) labelEl.textContent = 'Lat/Lng: ' + parseFloat(latEl.value).toFixed(6) + ', ' + parseFloat(lngEl.value).toFixed(6);
+      }
+
+      marker.on('dragend', () => updateInputs(marker.getLatLng()));
+      map.on('click', (e) => {
+        marker.setLatLng(e.latlng);
+        updateInputs(e.latlng);
+      });
+
+      if (geoBtn) {
+        geoBtn.addEventListener('click', () => {
+          if (!navigator.geolocation) return alert('Geolocation not supported by your browser.');
+          geoBtn.disabled = true;
+          geoBtn.textContent = 'Locating…';
+          navigator.geolocation.getCurrentPosition((pos) => {
+            const ll = {
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude
+            };
+            map.setView(ll, 16);
+            marker.setLatLng(ll);
+            updateInputs(ll);
+            geoBtn.disabled = false;
+            geoBtn.textContent = 'Use my location';
+          }, (err) => {
+            alert('Unable to retrieve location: ' + (err && err.message ? err.message : 'Unknown error'));
+            geoBtn.disabled = false;
+            geoBtn.textContent = 'Use my location';
+          }, {
+            enableHighAccuracy: true,
+            timeout: 8000,
+            maximumAge: 0
+          });
+        });
+      }
+
+      setTimeout(() => map.invalidateSize(), 150);
+
+      function reverseGeocode(lat, lng) {
+        if (!addrTextarea) return;
+        let fetchController = reverseGeocode._fetchController;
+        if (fetchController) fetchController.abort();
+        fetchController = new AbortController();
+        reverseGeocode._fetchController = fetchController;
+        addrTextarea.value = 'Fetching address…';
+        let attempts = 0;
+        const endpoint = new URL('../api/reverse_geocode.php', window.location.href).toString();
+        const tryFetch = () => {
+          fetch(`${endpoint}?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`, {
+              signal: fetchController.signal
+            })
+            .then(r => r.ok ? r.json() : Promise.reject(new Error('Reverse geocoding failed')))
+            .then(data => {
+              if (!data || !data.address) throw new Error('No address found');
+              const a = data.address;
+              const parts = [];
+              const hn = a.house_number || '';
+              const road = a.road || a.residential || a.path || a.pedestrian || a.footway || '';
+              const street = (hn && road) ? `${hn} ${road}` : (road || hn);
+              if (street) parts.push(street);
+              const brgy = a.suburb || a.neighbourhood || a.neighborhood || a.village || a.quarter || a.hamlet || '';
+              if (brgy) parts.push(`Brgy. ${brgy}`);
+              const landmark = data.name || a.public_building || a.school || a.hospital || a.college || a.university || a.mall || a.shop || '';
+              if (landmark && (!street || !street.toLowerCase().includes(String(landmark).toLowerCase()))) {
+                parts.push(`Near ${landmark}`);
+              }
+              const text = parts.filter(Boolean).join('\n');
+              if (text) {
+                addrTextarea.value = text;
+              } else {
+                addrTextarea.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+              }
+            })
+            .catch(() => {
+              if (attempts < 2) {
+                attempts++;
+                setTimeout(tryFetch, 800 * attempts);
+              } else {
+                addrTextarea.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+              }
+            });
+        };
+        tryFetch();
+      }
+      return map;
+    }
+
+    // Initialize the create map on this page
+    (function() {
+      initMap('shopMapCreate', 'latitudeCreate', 'longitudeCreate', 'coordsCreate', 'geoBtnCreate', null, null);
+    })();
   </script>
 </body>
 
