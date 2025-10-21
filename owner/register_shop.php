@@ -49,7 +49,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'regis
           $ins->execute([$ownerId, $shop_name, $address, $city]);
         }
         $createdShopId = (int)$pdo->lastInsertId();
-        $notice = 'Shop created successfully. You can now submit verification documents for admin review.';
+        // If owner currently has any active paid subscription on any shop, auto-apply same plan to this new shop
+        try {
+          $subQ = $pdo->prepare("SELECT s.plan_type, s.valid_from, s.valid_to FROM Shop_Subscriptions s JOIN Barbershops b ON s.shop_id=b.shop_id WHERE b.owner_id=? AND s.payment_status='paid' AND CURDATE() BETWEEN s.valid_from AND s.valid_to ORDER BY s.valid_to DESC LIMIT 1");
+          $subQ->execute([$ownerId]);
+          $active = $subQ->fetch(PDO::FETCH_ASSOC);
+          if ($active && $createdShopId > 0) {
+            $planType = $active['plan_type'] === 'monthly' ? 'monthly' : 'yearly';
+            $validFrom = date('Y-m-d');
+            // Align expiry with the owner’s current active subscription window
+            $validTo = $active['valid_to'];
+            $zeroFee = 0.00;
+            $zeroTax = 0.0;
+            $insSub = $pdo->prepare("INSERT INTO Shop_Subscriptions (shop_id, plan_type, annual_fee, tax_rate, payment_status, valid_from, valid_to) VALUES (?,?,?,?, 'paid', ?, ?)");
+            $insSub->execute([$createdShopId, $planType, $zeroFee, $zeroTax, $validFrom, $validTo]);
+            $notice = 'Shop created successfully. A subscription has been automatically applied based on your active plan (expires on ' . e($validTo) . '). You can now submit verification documents for admin review.';
+          } else {
+            $notice = 'Shop created successfully. You can now submit verification documents for admin review.';
+          }
+        } catch (Throwable $e) {
+          // Fallback to basic notice if auto-apply fails silently
+          $notice = 'Shop created successfully. You can now submit verification documents for admin review.';
+        }
       } catch (Throwable $e) {
         $errors[] = 'Failed to create shop. Please try again.';
       }
