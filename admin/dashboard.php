@@ -212,8 +212,8 @@ include __DIR__ . '/partials/sidebar.php';
           <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="card-title mb-0">Revenue Overview</h5>
             <div class="btn-group btn-group-sm" role="group" id="rev-range-group">
-              <button class="btn btn-outline-secondary active" data-range="30d">30d</button>
-              <button class="btn btn-outline-secondary" data-range="90d">90d</button>
+              <button class="btn btn-outline-secondary" data-range="30d">30d</button>
+              <button class="btn btn-outline-secondary active" data-range="90d">90d</button>
               <button class="btn btn-outline-secondary" data-range="1y">1y</button>
             </div>
           </div>
@@ -387,8 +387,8 @@ include __DIR__ . '/partials/sidebar.php';
       return 12; // 1y
     };
 
-    // Initialize chart with 30d by default
-    const initRange = '30d';
+    // Initialize chart with 90d by default
+    const initRange = '90d';
     const sliceFor = (range) => {
       const n = getSliceSize(range);
       return {
