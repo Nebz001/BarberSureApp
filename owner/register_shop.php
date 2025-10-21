@@ -9,6 +9,9 @@ $ownerId = (int)($user['user_id'] ?? 0);
 
 $errors = [];
 $notice = null;
+$createdShopId = null; // set after successful creation
+$docErrors = [];
+$docSubmitted = false;
 
 // Helper: sanitize POST
 function in_post($k, $d = '')
@@ -45,13 +48,116 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'regis
           $ins = $pdo->prepare("INSERT INTO Barbershops (owner_id, shop_name, address, city, status, registered_at) VALUES (?,?,?,?, 'pending', NOW())");
           $ins->execute([$ownerId, $shop_name, $address, $city]);
         }
-        // Redirect to manage shops after successful creation
-        header('Location: manage_shop.php');
-        exit;
+        $createdShopId = (int)$pdo->lastInsertId();
+        $notice = 'Shop created successfully. You can now submit verification documents for admin review.';
       } catch (Throwable $e) {
         $errors[] = 'Failed to create shop. Please try again.';
       }
     }
+  }
+}
+
+// Handle verification documents submission (sent to admin)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submit_verification_docs') {
+  $csrfOk = true;
+  if (function_exists('verify_csrf')) $csrfOk = verify_csrf($_POST['csrf'] ?? '');
+  if (!$csrfOk) {
+    $docErrors[] = 'Session expired. Please refresh and try again.';
+  } else {
+    // Confirm Documents table accessibility
+    try {
+      $pdo->query("SELECT 1 FROM Documents LIMIT 1");
+    } catch (Throwable $e) {
+      $docErrors[] = 'Document storage unavailable.';
+    }
+  }
+
+  // Determine shop to attach docs to
+  $targetShopId = null;
+  if (isset($_POST['shop_id'])) {
+    $candidate = (int)$_POST['shop_id'];
+    if ($candidate > 0) {
+      $chk = $pdo->prepare("SELECT shop_id FROM Barbershops WHERE shop_id=? AND owner_id=?");
+      $chk->execute([$candidate, $ownerId]);
+      $targetShopId = (int)($chk->fetchColumn() ?: 0) ?: null;
+    }
+  }
+  if (!$targetShopId) {
+    // fallback to most recent shop of owner
+    $ps = $pdo->prepare("SELECT shop_id FROM Barbershops WHERE owner_id=? ORDER BY shop_id DESC LIMIT 1");
+    $ps->execute([$ownerId]);
+    $targetShopId = (int)($ps->fetchColumn() ?: 0) ?: null;
+  }
+
+  if (!$docErrors) {
+    $targetDir = dirname(__DIR__) . '/storage/documents';
+    if (!is_dir($targetDir)) @mkdir($targetDir, 0775, true);
+    $ins = $pdo->prepare("INSERT INTO Documents (owner_id, shop_id, doc_type, file_path, status) VALUES (?,?,?,?, 'pending')");
+
+    $storeFile = function ($field, string $docType) use (&$docErrors, $targetDir, $ins, $ownerId, $targetShopId) {
+      if (!isset($_FILES[$field]) || !is_array($_FILES[$field]) || ($_FILES[$field]['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) return;
+      $f = $_FILES[$field];
+      $tmp = $f['tmp_name'];
+      if (!is_uploaded_file($tmp)) return;
+      $mime = mime_content_type($tmp);
+      if (strpos($mime, 'image/') !== 0) {
+        $docErrors[] = 'File for ' . $docType . ' must be an image.';
+        return;
+      }
+      $ext = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
+      if (!preg_match('/^(jpe?g|png|webp)$/', $ext)) $ext = 'jpg';
+      $name = $docType . '_' . $ownerId . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(3)) . '.' . $ext;
+      $dest = $targetDir . '/' . $name;
+      if (!move_uploaded_file($tmp, $dest)) {
+        $docErrors[] = 'Failed to store ' . $docType . ' file.';
+        return;
+      }
+      $relPath = 'storage/documents/' . $name;
+      try {
+        $ins->execute([$ownerId, $targetShopId, $docType, $relPath]);
+      } catch (Throwable $e) {
+        $docErrors[] = 'DB error saving ' . $docType;
+      }
+    };
+
+    // Required docs (same set as dashboard)
+    $storeFile('valid_id_front', 'personal_id_front');
+    $storeFile('valid_id_back', 'personal_id_back');
+    $storeFile('business_permit', 'business_permit');
+    $storeFile('sanitation_certificate', 'sanitation_certificate');
+    $storeFile('tax_certificate', 'tax_certificate');
+    if (isset($_FILES['shop_photos']) && is_array($_FILES['shop_photos']['name'])) {
+      $count = count($_FILES['shop_photos']['name']);
+      for ($i = 0; $i < $count; $i++) {
+        if (($_FILES['shop_photos']['error'][$i] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) continue;
+        $tmpName = $_FILES['shop_photos']['tmp_name'][$i];
+        if (!is_uploaded_file($tmpName)) continue;
+        $mime = mime_content_type($tmpName);
+        if (strpos($mime, 'image/') !== 0) {
+          $docErrors[] = 'Shop photo must be image.';
+          continue;
+        }
+        $ext = strtolower(pathinfo($_FILES['shop_photos']['name'][$i], PATHINFO_EXTENSION));
+        if (!preg_match('/^(jpe?g|png|webp)$/', $ext)) $ext = 'jpg';
+        $name = 'shop_photo_' . $ownerId . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(3)) . '.' . $ext;
+        $dest = $targetDir . '/' . $name;
+        if (!move_uploaded_file($tmpName, $dest)) {
+          $docErrors[] = 'Failed to store shop photo.';
+          continue;
+        }
+        $relPath = 'storage/documents/' . $name;
+        try {
+          $ins->execute([$ownerId, $targetShopId, 'shop_photo', $relPath]);
+        } catch (Throwable $e) {
+          $docErrors[] = 'DB error saving shop photo';
+        }
+      }
+    }
+  }
+
+  if (!$docErrors) {
+    $docSubmitted = true;
+    $notice = 'Documents submitted. Pending admin review.';
   }
 }
 
@@ -230,6 +336,22 @@ $batangasCities = [
         </ul>
       </div>
     <?php endif; ?>
+    <?php if ($notice): ?>
+      <div class="card" style="padding:.8rem 1rem;margin-bottom:1rem;border-color:#1e3a8a;background:linear-gradient(135deg,#0b1624,#0c1b2b);">
+        <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;">
+          <i class="bi bi-check-circle" aria-hidden="true" style="color:#6ee7b7;"></i>
+          <div style="font-size:.8rem;">
+            <?= e($notice) ?>
+          </div>
+          <?php if ($createdShopId): ?>
+            <button type="button" class="btn btn-primary" onclick="openDocModal()" style="margin-left:auto;">
+              <i class="bi bi-file-earmark-arrow-up" aria-hidden="true"></i>
+              <span>Submit Documents Now</span>
+            </button>
+          <?php endif; ?>
+        </div>
+      </div>
+    <?php endif; ?>
 
     <section class="card" style="padding:1rem 1.1rem 1.2rem;">
       <form method="post" onsubmit="return confirmSubmit(event)" style="display:flex;flex-direction:column;gap:.9rem;">
@@ -285,6 +407,68 @@ $batangasCities = [
       </form>
     </section>
 
+    <?php if ($createdShopId || $docSubmitted): ?>
+      <!-- Document Upload Modal trigger shown via notice; modal markup below -->
+      <div id="docUploadModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);">
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#0b1220;border:1px solid #1e3a8a;border-radius:18px;padding:1.4rem 1.35rem 1.55rem;max-width:640px;width:92%;box-shadow:0 8px 40px -10px #000,0 0 0 1px #1e3a8a inset;display:flex;flex-direction:column;gap:1rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">
+            <h3 style="margin:0;font-size:1.1rem;letter-spacing:.5px;background:linear-gradient(90deg,#bfdbfe,#93c5fd,#60a5fa);-webkit-background-clip:text;background-clip:text;color:transparent;">Submit Verification Documents</h3>
+            <button type="button" onclick="closeDocModal()" class="btn btn-outline" style="font-size:.62rem;">Close</button>
+          </div>
+          <?php if ($docErrors): ?>
+            <div style="background:#3a1e10;border:1px solid #a13333;color:#fca5a5;padding:.6rem .75rem;border-radius:10px;font-size:.63rem;line-height:1.4;">
+              <?php foreach ($docErrors as $err): ?><div>• <?= e($err) ?></div><?php endforeach; ?>
+            </div>
+          <?php endif; ?>
+          <form method="post" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:1.1rem;" onsubmit="return confirm('Submit documents now?');">
+            <input type="hidden" name="action" value="submit_verification_docs" />
+            <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>" />
+            <input type="hidden" name="shop_id" value="<?= (int)($createdShopId ?? 0) ?>" />
+            <div style="display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));">
+              <label style="display:flex;flex-direction:column;gap:.45rem;background:#0b1a34;border:1px solid #1e3a8a;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;box-shadow:0 0 0 1px #1e3a8a inset, 0 4px 14px -8px #000;">
+                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#93c5fd;">Government ID (Front)</span>
+                <input type="file" name="valid_id_front" accept="image/*" style="font-size:.6rem;color:#cfe3ff;" required />
+                <span style="font-size:.5rem;color:#60a5fa;">PNG / JPG / WEBP</span>
+              </label>
+              <label style="display:flex;flex-direction:column;gap:.45rem;background:#0b1a34;border:1px solid #1e3a8a;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;box-shadow:0 0 0 1px #1e3a8a inset, 0 4px 14px -8px #000;">
+                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#93c5fd;">Government ID (Back)</span>
+                <input type="file" name="valid_id_back" accept="image/*" style="font-size:.6rem;color:#cfe3ff;" required />
+                <span style="font-size:.5rem;color:#60a5fa;">Same ID back side</span>
+              </label>
+              <label style="display:flex;flex-direction:column;gap:.45rem;background:#0b1a34;border:1px solid #1e3a8a;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;box-shadow:0 0 0 1px #1e3a8a inset, 0 4px 14px -8px #000;">
+                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#93c5fd;">Business Permit / DTI / Barangay Clearance</span>
+                <input type="file" name="business_permit" accept="image/*" style="font-size:.6rem;color:#cfe3ff;" required />
+                <span style="font-size:.5rem;color:#60a5fa;">Upload one clear image</span>
+              </label>
+              <label style="display:flex;flex-direction:column;gap:.45rem;background:#0b1a34;border:1px solid #1e3a8a;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;box-shadow:0 0 0 1px #1e3a8a inset, 0 4px 14px -8px #000;">
+                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#93c5fd;">Sanitation Certificate</span>
+                <input type="file" name="sanitation_certificate" accept="image/*" style="font-size:.6rem;color:#cfe3ff;" required />
+                <span style="font-size:.5rem;color:#60a5fa;">Latest approved copy</span>
+              </label>
+              <label style="display:flex;flex-direction:column;gap:.45rem;background:#0b1a34;border:1px solid #1e3a8a;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;box-shadow:0 0 0 1px #1e3a8a inset, 0 4px 14px -8px #000;">
+                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#93c5fd;">Tax Certificate</span>
+                <input type="file" name="tax_certificate" accept="image/*" style="font-size:.6rem;color:#cfe3ff;" required />
+                <span style="font-size:.5rem;color:#60a5fa;">Proof of tax compliance</span>
+              </label>
+              <label style="display:flex;flex-direction:column;gap:.45rem;background:#0b1a34;border:1px solid #1e3a8a;padding:.85rem .85rem 1rem;border-radius:14px;cursor:pointer;box-shadow:0 0 0 1px #1e3a8a inset, 0 4px 14px -8px #000;">
+                <span style="font-size:.65rem;font-weight:600;letter-spacing:.55px;color:#93c5fd;">Shop Photo(s)</span>
+                <input type="file" name="shop_photos[]" accept="image/*" multiple style="font-size:.6rem;color:#cfe3ff;" required />
+                <span style="font-size:.5rem;color:#60a5fa;">Front & Interior (you can select multiple)</span>
+              </label>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:.6rem;flex-wrap:wrap;">
+              <button type="button" onclick="closeDocModal()" class="btn btn-outline" style="font-size:.62rem;">Cancel</button>
+              <button type="submit" class="btn btn-primary" style="font-size:.62rem;">
+                <i class="bi bi-upload" aria-hidden="true"></i>
+                <span>Submit Documents</span>
+              </button>
+            </div>
+            <p style="margin:.2rem 0 0;font-size:.55rem;color:#b08d63;">Once submitted, documents cannot be edited until reviewed by admin.</p>
+          </form>
+        </div>
+      </div>
+    <?php endif; ?>
+
     <footer class="footer" style="margin-top:2rem;">&copy; <?= date('Y') ?> BarberSure • Empowering barbershop owners.</footer>
   </main>
   <script src="../assets/js/menu-toggle.js"></script>
@@ -294,6 +478,21 @@ $batangasCities = [
       const first = document.querySelector('input[name="shop_name"]');
       if (first) first.focus();
     });
+  </script>
+  <script>
+    function openDocModal() {
+      const m = document.getElementById('docUploadModal');
+      if (m) m.style.display = 'block';
+    }
+
+    function closeDocModal() {
+      const m = document.getElementById('docUploadModal');
+      if (m) m.style.display = 'none';
+    }
+    // Auto-open modal if we just created a shop (optional UX)
+    <?php if ($createdShopId && !$docSubmitted): ?>
+      setTimeout(() => openDocModal(), 200);
+    <?php endif; ?>
   </script>
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
