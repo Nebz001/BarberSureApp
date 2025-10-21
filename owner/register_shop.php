@@ -256,7 +256,10 @@ $batangasCities = [
           <div class="map-toolbar">
             <strong style="letter-spacing:.4px;">Pin Location (optional)</strong>
             <div style="display:flex;gap:.5rem;align-items:center;">
-              <button type="button" class="btn btn-small" id="geoBtnCreate" style="font-size:.6rem;">Use my location</button>
+              <button type="button" class="btn" id="geoBtnCreate" style="font-size:.65rem;">
+                <i class="bi bi-geo-alt" aria-hidden="true"></i>
+                <span class="label">Use my location</span>
+              </button>
               <span id="coordsCreate" class="small-note" style="font-size:.6rem;">Lat/Lng: —</span>
             </div>
           </div>
@@ -266,9 +269,18 @@ $batangasCities = [
           <div class="small-note" style="font-size:.6rem;">Drag the pin or click the map to set your shop location. This helps customers find you.</div>
         </div>
         <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
-          <button type="submit" class="btn-accent"><i class="bi bi-plus-circle" aria-hidden="true"></i> Create Shop</button>
-          <a href="manage_shop.php" class="btn-outline">Manage Shops</a>
-          <a href="dashboard.php" class="btn-outline">Back to Dashboard</a>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-plus-circle" aria-hidden="true"></i>
+            <span>Create Shop</span>
+          </button>
+          <a href="manage_shop.php" class="btn btn-outline">
+            <i class="bi bi-shop" aria-hidden="true"></i>
+            <span>Manage Shops</span>
+          </a>
+          <a href="dashboard.php" class="btn btn-outline">
+            <i class="bi bi-speedometer2" aria-hidden="true"></i>
+            <span>Back to Dashboard</span>
+          </a>
         </div>
       </form>
     </section>
@@ -330,10 +342,12 @@ $batangasCities = [
       });
 
       if (geoBtn) {
+        const geoLabel = geoBtn.querySelector('.label');
         geoBtn.addEventListener('click', () => {
           if (!navigator.geolocation) return alert('Geolocation not supported by your browser.');
           geoBtn.disabled = true;
-          geoBtn.textContent = 'Locating…';
+          if (geoLabel) geoLabel.textContent = 'Locating…';
+          else geoBtn.textContent = 'Locating…';
           navigator.geolocation.getCurrentPosition((pos) => {
             const ll = {
               lat: pos.coords.latitude,
@@ -343,11 +357,13 @@ $batangasCities = [
             marker.setLatLng(ll);
             updateInputs(ll);
             geoBtn.disabled = false;
-            geoBtn.textContent = 'Use my location';
+            if (geoLabel) geoLabel.textContent = 'Use my location';
+            else geoBtn.textContent = 'Use my location';
           }, (err) => {
             alert('Unable to retrieve location: ' + (err && err.message ? err.message : 'Unknown error'));
             geoBtn.disabled = false;
-            geoBtn.textContent = 'Use my location';
+            if (geoLabel) geoLabel.textContent = 'Use my location';
+            else geoBtn.textContent = 'Use my location';
           }, {
             enableHighAccuracy: true,
             timeout: 8000,
