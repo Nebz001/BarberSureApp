@@ -562,6 +562,7 @@ function format_payment_time($datetime)
 
 <body class="owner-shell owner-wrapper">
     <header class="owner-header">
+    <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg" />
         <button class="nav-hamburger" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="ownerNav">☰</button>
         <?php $__first = $user ? e(explode(' ', trim($user['full_name']))[0]) : 'Owner'; ?>
         <div class="owner-brand">BarberSure <span style="opacity:.55;font-weight:500;">Owner</span><span class="owner-badge">Welcome <?= $__first ?></span></div>

@@ -93,6 +93,7 @@ $channel = isset($_GET['c']) && preg_match('/^[A-Za-z0-9_-]{6,60}$/', $_GET['c']
 
 <body class="owner-wrapper">
     <div class="chat-wrap">
+    <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg" />
         <h1 style="margin:0 0 1rem;font-size:1.15rem;font-weight:600;"><i class="bi bi-chat-left-text" aria-hidden="true"></i> Ephemeral Customer Chat</h1>
         <form method="get" style="display:flex;gap:.5rem;flex-wrap:wrap;margin:0 0 1rem;">
             <input type="text" name="c" value="<?= e($channel) ?>" placeholder="Channel ID" style="flex:1;min-width:220px;padding:.55rem .65rem;border-radius:8px;border:1px solid #243240;background:#111f2a;color:#e5ebf1;" />

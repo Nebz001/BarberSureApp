@@ -195,6 +195,7 @@ function format_appointment_time($datetime)
     <meta charset="UTF-8" />
     <title>Manage Bookings • Owner • BarberSure</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg" />
     <link rel="stylesheet" href="../assets/css/owner.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />

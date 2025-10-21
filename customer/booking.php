@@ -817,6 +817,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <body class="dashboard-wrapper">
   <header class="header-bar">
+  <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg" />
     <button class="nav-hamburger" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="customerNav">☰</button>
     <div class="header-brand">
       <span>BarberSure <span style="opacity:.55;font-weight:500;">Customer</span></span>

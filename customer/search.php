@@ -334,6 +334,7 @@ if (!function_exists('page_link')) {
 </head>
 
 <body class="dashboard-wrapper">
+  <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg" />
   <header class="header-bar">
     <button class="nav-hamburger" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="customerNav">☰</button>
     <div class="header-brand">
